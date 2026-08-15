@@ -306,3 +306,47 @@ resultado confirman `"loader_release_rule": "load_only"` y `"replications": 500`
 en todas las combinaciones completadas; `SimBudget.short_reps` sigue siendo `20` por defecto en
 `config.py` (sin tocar), y se pasa `--short-reps 5` explícitamente en cada invocación, tal como
 exige el plan de la Fase 4.
+
+### Medición fresca en I08 y nueva decisión de `--timeout-s`
+
+Antes de relanzar el resto del lote (I07 restante + I08-I10 completas), se corrió UNA sola
+combinación grande sin límite de subproceso, para medir el tiempo real en esta máquina:
+
+```
+.venv/Scripts/python.exe run_all.py --method des --instance I08 --cv 0.10 --short-reps 5 \
+  --loader-release-rule load_only --outdir resultados_paper/raw
+```
+
+**Resultado medido:** SimTSI-DES en I08 (8 loaders / 16 jobs) tardó **1792.79 s (≈29.9 min)**
+en completar — `cpu_s` reportado en `des_I08_cv10.json`. Esto confirma que `--timeout-s 900`
+(15 min) es demasiado bajo para I08: habría matado esta combinación exactamente como mató a
+`dynamic_I07_cv05` y a `mc_I07_cv10`/`des_I07_cv10` repetidamente.
+
+**Progresión medida hasta ahora (SimTSI-DES, cv≈0.05-0.10, `short_reps=5`):**
+
+| Instancia | Loaders/Jobs | Tiempo real |
+|---|---|---|
+| I06 | 6/12 | 653.7-769.4 s |
+| I07 | 7/14 | 1024.3 s |
+| I08 | 8/16 | **1792.8 s** |
+
+El crecimiento no es lineal (factor ×1.33 de I06→I07, factor ×1.75 de I07→I08), consistente
+con el hallazgo de la Fase 2c de que el costo crece más rápido que el tamaño de la instancia
+(vecindad INSERT ~ n_jobs×(n_jobs+n_loaders) combinada con un costo por réplica DES que también
+aumenta). Extrapolando esa tasa de crecimiento (conservador, ×1.75 por instancia), I09 podría
+rondar ~3100 s (~52 min) e I10 ~5400 s (~90 min) — son extrapolaciones, no mediciones, y se
+tratan como tales.
+
+**Decisión:** se sube `--timeout-s` de 900 a **3600 (1 hora)** para el resto de esta corrida
+(I07 restante + I08-I10), reemplazando el valor de la Fase 4. Justificación: 3600 s da ~2x de
+margen sobre el tiempo real medido de I08 (1792.8 s), cubriendo con holgura los otros métodos
+(`mc`, `dynamic`) y niveles de `cv` de I08, que según el patrón de I06 pueden ser hasta ~1.3x
+más lentos que `des`. Para I09, 3600 s le da una oportunidad real según la extrapolación de
+arriba. Para I10, es posible que varias combinaciones agoten el timeout sin terminar — se
+acepta esa posibilidad explícitamente (ver Paso 4 del encargo): no se sube el timeout más allá
+de 3600 s "a ciegas" para perseguir I10, porque en el peor caso (46 combinaciones restantes,
+todas agotando el timeout) el lote completo tomaría ~46 horas, un costo no justificado por una
+sola instancia adicional cuando ya se dispone de evidencia de que el crecimiento es superlineal
+y esta máquina tiene recursos limitados (ver `docs/PERFIL_MAQUINA.md`). Si I09/I10 no terminan
+de forma viable, se documenta explícitamente en `resultados_paper/run_manifest.json` y en
+`docs/INFORME_FINAL.md`, sin ocultarlo.
