@@ -270,3 +270,39 @@ cada iteración) varía en <0.05%. Esto es evidencia de que, para estas instanci
    I06/I07 podrían terminar bien por debajo del timeout, como ya se vio en el salto no lineal
    pero no siempre monotónico I04→I05. Se deja correr en segundo plano y se documenta en
    `resultados_paper/run_manifest.json` y en el informe final exactamente qué terminó y qué no.
+
+## Fase 5 — Retomado del lote tras interrupción (sesión 2026-08-15)
+
+**Diagnóstico del corte anterior**, leyendo `resultados_paper/raw/summary.csv` y
+`run_log.jsonl` completos: la corrida se cortó a media I07. Estado exacto al retomar:
+
+- **I01-I06 completas** (72/120 combinaciones, los 3 métodos × 4 CV cada una): `status: "ok"`.
+- **I07 cv=0.05:** `mc` y `des` terminaron `"ok"` (905.4 s y 1024.3 s respectivamente).
+  `dynamic` NUNCA terminó: 2 intentos registrados explícitamente como `"timeout"` en
+  `run_log.jsonl`, y un tercer intento que quedó sin registrar (el log termina abruptamente en
+  la línea 709, justo después de saltar `des_I07_cv05` como ya-hecho y antes de escribir
+  cualquier entrada para `dynamic_I07_cv05` — evidencia de que el proceso se interrumpió
+  mientras ese tercer intento corría, no de que terminó).
+- **I07 cv=0.10:** `mc` con 2 timeouts registrados, `des` con 1 timeout registrado, `dynamic`
+  nunca intentada.
+- **I07 cv=0.20 y cv=0.30, e I08/I09/I10 completas: nunca intentadas** (0 entradas en el log).
+- **Total: 74/120 con resultado `"ok"`, 46 pendientes** (10 de I07 + 36 de I08-I10).
+
+**Inconsistencia detectada y corregida:** `mc_I07_cv05` (905.4 s) y `des_I07_cv05` (1024.3 s)
+terminaron con `status: "ok"` a pesar de exceder los 900 s que este documento declaraba como
+`--timeout-s`. Con `--timeout-s 900` real, `subprocess.run(..., timeout=900)` habría matado
+`des_I07_cv05` antes de los 1024 s (ver `_run_one_subprocess()` en `run_all.py`). Esto indica
+que esa corrida particular se lanzó sin `--timeout-s` (ejecución in-process, sin límite de
+subproceso) o con un valor no documentado mayor a 1024 s — no se puede reconstruir el comando
+exacto de esa sesión anterior porque no quedó un log de la invocación de shell, solo
+`run_log.jsonl`. Se deja señalado aquí como corrección a la Fase 4: **el `--timeout-s 900`
+documentado en la Fase 4 NO fue el valor efectivamente usado en todas las corridas de I07.**
+El valor real usado a partir de esta sesión (Fase 5) se fija y documenta con evidencia de
+medición fresca en la sección siguiente, en vez de asumir que 900 s sigue siendo razonable
+para instancias I08-I10.
+
+El resto de las decisiones de la Fase 4 sí coincide con la realidad verificada: los JSON de
+resultado confirman `"loader_release_rule": "load_only"` y `"replications": 500` (final_reps)
+en todas las combinaciones completadas; `SimBudget.short_reps` sigue siendo `20` por defecto en
+`config.py` (sin tocar), y se pasa `--short-reps 5` explícitamente en cada invocación, tal como
+exige el plan de la Fase 4.
