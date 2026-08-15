@@ -1,0 +1,28 @@
+{
+  "fitness": 686.102943938239,
+  "mean_cmax_min": 686.102943938239,
+  "sd_cmax_min": 0.24838657010025295,
+  "prob_finish_within_shift": 1.0,
+  "expected_overtime_min": 0.0,
+  "prob_plant_target": 1.0,
+  "prob_pad_target": 1.0,
+  "mean_truck_wait_min": 0.0,
+  "mean_loader_utilization": 0.0104185653095129,
+  "mean_plant_dump_utilization": 0.003013260138991866,
+  "mean_pad_dump_utilization": 0.0029970110936019833,
+  "replications": 3,
+  "method": "SimTSI-DES",
+  "instance": "I01",
+  "cv": 0.1,
+  "best_solution": [
+    [
+      0,
+      1
+    ]
+  ],
+  "search_fitness": 685.9341765233169,
+  "tsi_evaluations": 2,
+  "cpu_s": 0.004074800061061978,
+  "tsi_seed": 12345,
+  "simulation_seed": 500000
+}

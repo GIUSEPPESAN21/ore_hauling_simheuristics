@@ -1,0 +1,98 @@
+{
+  "id": "I03",
+  "horizon_min": 1440.0,
+  "meta_plant": 787.25,
+  "meta_pad": 214.5,
+  "loaders": [
+    {
+      "id": 0,
+      "name": "Loader_1",
+      "mean_load_min": 3.5
+    },
+    {
+      "id": 1,
+      "name": "Loader_2",
+      "mean_load_min": 5.0
+    },
+    {
+      "id": 2,
+      "name": "Loader_3",
+      "mean_load_min": 3.5
+    }
+  ],
+  "jobs": [
+    {
+      "id": 0,
+      "truck_id": 0,
+      "truck_type": "CAT 798 AC",
+      "release_min": 202.778,
+      "destination": "Plant",
+      "grade_pct": 1.3404,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 125.6753
+    },
+    {
+      "id": 1,
+      "truck_id": 1,
+      "truck_type": "Komatsu 960E",
+      "release_min": 277.242,
+      "destination": "Plant",
+      "grade_pct": 1.5064,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 158.9329
+    },
+    {
+      "id": 2,
+      "truck_id": 2,
+      "truck_type": "CAT 798 AC",
+      "release_min": 534.254,
+      "destination": "Plant",
+      "grade_pct": 1.1102,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 168.0733
+    },
+    {
+      "id": 3,
+      "truck_id": 3,
+      "truck_type": "Komatsu 960E",
+      "release_min": 713.655,
+      "destination": "Plant",
+      "grade_pct": 1.5836,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 140.2832
+    },
+    {
+      "id": 4,
+      "truck_id": 4,
+      "truck_type": "CAT 798 AC",
+      "release_min": 780.946,
+      "destination": "Plant",
+      "grade_pct": 1.4413,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 124.1524
+    },
+    {
+      "id": 5,
+      "truck_id": 5,
+      "truck_type": "Komatsu 960E",
+      "release_min": 812.282,
+      "destination": "Plant",
+      "grade_pct": 1.0967,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 148.8579
+    }
+  ],
+  "provenance_note": "SURROGATE trip-level data for code verification; replace with exact original instances for final IJMST experiments."
+}

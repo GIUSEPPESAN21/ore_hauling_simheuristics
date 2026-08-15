@@ -1,0 +1,243 @@
+{
+  "id": "I08",
+  "horizon_min": 1440.0,
+  "meta_plant": 787.25,
+  "meta_pad": 214.5,
+  "loaders": [
+    {
+      "id": 0,
+      "name": "Loader_1",
+      "mean_load_min": 3.5
+    },
+    {
+      "id": 1,
+      "name": "Loader_2",
+      "mean_load_min": 5.0
+    },
+    {
+      "id": 2,
+      "name": "Loader_3",
+      "mean_load_min": 3.5
+    },
+    {
+      "id": 3,
+      "name": "Loader_4",
+      "mean_load_min": 5.0
+    },
+    {
+      "id": 4,
+      "name": "Loader_5",
+      "mean_load_min": 3.5
+    },
+    {
+      "id": 5,
+      "name": "Loader_6",
+      "mean_load_min": 5.0
+    },
+    {
+      "id": 6,
+      "name": "Loader_7",
+      "mean_load_min": 3.5
+    },
+    {
+      "id": 7,
+      "name": "Loader_8",
+      "mean_load_min": 5.0
+    }
+  ],
+  "jobs": [
+    {
+      "id": 0,
+      "truck_id": 0,
+      "truck_type": "CAT 798 AC",
+      "release_min": 24.556,
+      "destination": "Plant",
+      "grade_pct": 1.4941,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 62.6944
+    },
+    {
+      "id": 1,
+      "truck_id": 1,
+      "truck_type": "Komatsu 960E",
+      "release_min": 180.633,
+      "destination": "Plant",
+      "grade_pct": 1.1517,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 57.561
+    },
+    {
+      "id": 2,
+      "truck_id": 2,
+      "truck_type": "CAT 798 AC",
+      "release_min": 204.088,
+      "destination": "Plant",
+      "grade_pct": 1.0758,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 66.1166
+    },
+    {
+      "id": 3,
+      "truck_id": 3,
+      "truck_type": "Komatsu 960E",
+      "release_min": 215.663,
+      "destination": "Plant",
+      "grade_pct": 1.1636,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 63.649
+    },
+    {
+      "id": 4,
+      "truck_id": 4,
+      "truck_type": "CAT 798 AC",
+      "release_min": 234.827,
+      "destination": "Plant",
+      "grade_pct": 1.1545,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 65.385
+    },
+    {
+      "id": 5,
+      "truck_id": 5,
+      "truck_type": "Komatsu 960E",
+      "release_min": 290.965,
+      "destination": "Plant",
+      "grade_pct": 1.5821,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 82.2318
+    },
+    {
+      "id": 6,
+      "truck_id": 6,
+      "truck_type": "CAT 798 AC",
+      "release_min": 402.483,
+      "destination": "Plant",
+      "grade_pct": 1.2993,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 59.4441
+    },
+    {
+      "id": 7,
+      "truck_id": 7,
+      "truck_type": "Komatsu 960E",
+      "release_min": 430.783,
+      "destination": "Pad",
+      "grade_pct": 0.8826,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 84.4426
+    },
+    {
+      "id": 8,
+      "truck_id": 8,
+      "truck_type": "CAT 798 AC",
+      "release_min": 453.078,
+      "destination": "Pad",
+      "grade_pct": 0.7485,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 76.9895
+    },
+    {
+      "id": 9,
+      "truck_id": 9,
+      "truck_type": "Komatsu 960E",
+      "release_min": 487.742,
+      "destination": "Plant",
+      "grade_pct": 1.1526,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 68.1311
+    },
+    {
+      "id": 10,
+      "truck_id": 10,
+      "truck_type": "CAT 798 AC",
+      "release_min": 878.095,
+      "destination": "Plant",
+      "grade_pct": 1.4881,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 80.756
+    },
+    {
+      "id": 11,
+      "truck_id": 11,
+      "truck_type": "Komatsu 960E",
+      "release_min": 911.818,
+      "destination": "Pad",
+      "grade_pct": 0.461,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 74.5179
+    },
+    {
+      "id": 12,
+      "truck_id": 12,
+      "truck_type": "CAT 798 AC",
+      "release_min": 913.355,
+      "destination": "Plant",
+      "grade_pct": 1.4993,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 63.0668
+    },
+    {
+      "id": 13,
+      "truck_id": 13,
+      "truck_type": "Komatsu 960E",
+      "release_min": 955.819,
+      "destination": "Plant",
+      "grade_pct": 1.5219,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 57.5203
+    },
+    {
+      "id": 14,
+      "truck_id": 14,
+      "truck_type": "CAT 798 AC",
+      "release_min": 1061.843,
+      "destination": "Plant",
+      "grade_pct": 1.2976,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 81.2925
+    },
+    {
+      "id": 15,
+      "truck_id": 15,
+      "truck_type": "Komatsu 960E",
+      "release_min": 1062.471,
+      "destination": "Plant",
+      "grade_pct": 1.3084,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 58.1264
+    }
+  ],
+  "provenance_note": "SURROGATE trip-level data for code verification; replace with exact original instances for final IJMST experiments."
+}

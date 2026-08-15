@@ -1,0 +1,27 @@
+{
+  "fitness": 686.0280257671607,
+  "mean_cmax_min": 686.0280257671607,
+  "sd_cmax_min": 1.3810793248559627,
+  "prob_finish_within_shift": 1.0,
+  "expected_overtime_min": 0.0,
+  "prob_plant_target": 1.0,
+  "prob_pad_target": 1.0,
+  "mean_plant_fine_tons": 865.975,
+  "mean_pad_fine_tons": 235.95,
+  "replications": 500,
+  "loader_release_rule": "load_only",
+  "method": "SimTSI-MC",
+  "instance": "I01",
+  "cv": 0.1,
+  "best_solution": [
+    [
+      0,
+      1
+    ]
+  ],
+  "search_fitness": 685.7950042144565,
+  "tsi_evaluations": 2,
+  "cpu_s": 0.33515379996970296,
+  "tsi_seed": 12345,
+  "simulation_seed": 500000
+}

@@ -1,0 +1,38 @@
+{
+  "method": "DynSimTSI-DES",
+  "instance": "I04",
+  "cv": 0.05,
+  "best_solution_initial": [
+    [
+      0,
+      1,
+      4,
+      5,
+      6,
+      7
+    ],
+    [
+      3
+    ],
+    [
+      2
+    ],
+    []
+  ],
+  "mean_cmax_min": 928.5261657259659,
+  "sd_cmax_min": 0.7293735249674821,
+  "prob_finish_within_shift": 1.0,
+  "expected_overtime_min": 0.0,
+  "prob_plant_target": 1.0,
+  "prob_pad_target": 1.0,
+  "mean_truck_wait_min": 0.0001689984883861655,
+  "mean_loader_utilization": 0.007938937587457957,
+  "mean_n_reoptimizations": 0,
+  "mean_decision_time_s": 0.0,
+  "max_decision_time_s": 0.0,
+  "replications": 500,
+  "cpu_s": 228.57915830006823,
+  "tsi_seed": 12345,
+  "simulation_seed": 500000,
+  "rollout_seed": 900000
+}

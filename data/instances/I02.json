@@ -1,0 +1,69 @@
+{
+  "id": "I02",
+  "horizon_min": 1440.0,
+  "meta_plant": 787.25,
+  "meta_pad": 214.5,
+  "loaders": [
+    {
+      "id": 0,
+      "name": "Loader_1",
+      "mean_load_min": 3.5
+    },
+    {
+      "id": 1,
+      "name": "Loader_2",
+      "mean_load_min": 5.0
+    }
+  ],
+  "jobs": [
+    {
+      "id": 0,
+      "truck_id": 0,
+      "truck_type": "CAT 798 AC",
+      "release_min": 385.764,
+      "destination": "Plant",
+      "grade_pct": 1.5609,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 198.3343
+    },
+    {
+      "id": 1,
+      "truck_id": 1,
+      "truck_type": "Komatsu 960E",
+      "release_min": 411.287,
+      "destination": "Plant",
+      "grade_pct": 1.2414,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 192.2075
+    },
+    {
+      "id": 2,
+      "truck_id": 2,
+      "truck_type": "CAT 798 AC",
+      "release_min": 420.651,
+      "destination": "Plant",
+      "grade_pct": 1.2513,
+      "mean_haul_min": 8.0,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 8.0,
+      "fine_cu_tons": 257.5594
+    },
+    {
+      "id": 3,
+      "truck_id": 3,
+      "truck_type": "Komatsu 960E",
+      "release_min": 807.421,
+      "destination": "Plant",
+      "grade_pct": 1.5944,
+      "mean_haul_min": 9.5,
+      "mean_dump_min": 2.0,
+      "mean_return_min": 9.5,
+      "fine_cu_tons": 217.8739
+    }
+  ],
+  "provenance_note": "SURROGATE trip-level data for code verification; replace with exact original instances for final IJMST experiments."
+}
