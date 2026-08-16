@@ -9,6 +9,7 @@ from models import Instance
 from tsi import tabu_search
 from des import DESimulator
 from simtsi_des import run_simtsi_des
+from parallel_pool import get_pool, chunk_bounds
 
 
 def _residual_solution(sim: DESimulator):
@@ -78,22 +79,50 @@ def run_one_dynamic_rep(instance: Instance, static_solution, cv: float, actual_r
     return met
 
 
+def _run_dynamic_rep_range(instance: Instance, static_solution, cv: float,
+                           rep_start: int, rep_end: int, tsi_params: TSIParams,
+                           dyn: DynamicParams, tsi_seed: int, sim_seed: int,
+                           rollout_seed: int, penalty_per_ton_min: float) -> list:
+    """One process-pool task per chunk of top-level replications. Each
+    replication is a fully independent simulated shift (its own DESimulator
+    seeded by `replicate`, its own possible reoptimizations), so this is the
+    highest-leverage parallelization target for DynSimTSI-DES specifically —
+    see docs/DECISIONES.md, Fase 6."""
+    return [run_one_dynamic_rep(instance, static_solution, cv, r, tsi_params,
+                                dyn, tsi_seed, sim_seed, rollout_seed,
+                                penalty_per_ton_min)
+            for r in range(rep_start, rep_end)]
+
+
 def run_dynsimtsi_des(instance: Instance, cv: float,
                       tsi_params: TSIParams = TSIParams(), budget: SimBudget = SimBudget(),
                       dyn: DynamicParams = DynamicParams(), tsi_seed: int = TSI_SEED,
                       sim_seed: int = SIM_BASE_SEED, rollout_seed: int = ROLLOUT_BASE_SEED,
-                      penalty_per_ton_min: float = 1.0, static_solution=None):
+                      penalty_per_ton_min: float = 1.0, static_solution=None,
+                      workers: int = 1):
     t0 = time.perf_counter()
     if static_solution is None:
         # Initial schedule is the static DES simheuristic solution.
         static = run_simtsi_des(instance, cv, tsi_params, budget, tsi_seed,
-                                sim_seed, penalty_per_ton_min)
+                                sim_seed, penalty_per_ton_min, workers=workers)
         static_solution = static['best_solution']
 
-    rows = [run_one_dynamic_rep(instance, static_solution, cv, r, tsi_params,
-                                dyn, tsi_seed, sim_seed, rollout_seed,
-                                penalty_per_ton_min)
-            for r in range(budget.final_reps)]
+    pool = get_pool(workers)
+    if pool is None:
+        rows = [run_one_dynamic_rep(instance, static_solution, cv, r, tsi_params,
+                                    dyn, tsi_seed, sim_seed, rollout_seed,
+                                    penalty_per_ton_min)
+                for r in range(budget.final_reps)]
+    else:
+        # Order-invariant aggregation below (mean/pstdev/sums over rows), so
+        # chunked cross-process execution reproduces the sequential result
+        # exactly (each replication's randomness is keyed on its own index,
+        # never on execution order — see random_streams.py).
+        chunks = pool.starmap(_run_dynamic_rep_range,
+                              [(instance, static_solution, cv, a, b, tsi_params, dyn,
+                                tsi_seed, sim_seed, rollout_seed, penalty_per_ton_min)
+                               for a, b in chunk_bounds(budget.final_reps, workers)])
+        rows = [row for chunk in chunks for row in chunk]
     c = [x['cmax'] for x in rows]
     plant = [x['plant'] for x in rows]; pad = [x['pad'] for x in rows]
     return {

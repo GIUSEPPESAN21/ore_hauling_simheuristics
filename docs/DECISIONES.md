@@ -350,3 +350,153 @@ sola instancia adicional cuando ya se dispone de evidencia de que el crecimiento
 y esta máquina tiene recursos limitados (ver `docs/PERFIL_MAQUINA.md`). Si I09/I10 no terminan
 de forma viable, se documenta explícitamente en `resultados_paper/run_manifest.json` y en
 `docs/INFORME_FINAL.md`, sin ocultarlo.
+
+## Fase 6 — Paralelización de réplicas y retomado final (sesión 2026-08-16)
+
+### Diagnóstico al retomar
+
+Verificado leyendo `resultados_paper/raw/summary.csv` (104 filas) y `run_log.jsonl` completos,
+NO asumido: **104/120 combinaciones completas** (`status: "ok"`). El proceso del batch anterior
+(PID 20888) ya no está en ejecución — la pausa fue limpia, no un cuelgue. `run_log.jsonl`
+termina exactamente en `dynamic_I09_cv20` con `status: "timeout"` (3601.1 s, el límite de
+3600 s de la Fase 5). Las **16 combinaciones pendientes**, calculadas por diferencia contra las
+120 esperadas (10 instancias × 4 CV × 3 métodos), son:
+
+```
+des_I09_cv30, des_I10_cv05, des_I10_cv10, des_I10_cv20, des_I10_cv30,
+dynamic_I09_cv20, dynamic_I09_cv30, dynamic_I10_cv05, dynamic_I10_cv10,
+dynamic_I10_cv20, dynamic_I10_cv30,
+mc_I09_cv30, mc_I10_cv05, mc_I10_cv10, mc_I10_cv20, mc_I10_cv30
+```
+
+Confirmado que `short_reps=5`, `loader_release_rule=load_only` y `--timeout-s 3600` seguían
+siendo la configuración real usada (verificado contra los JSON de las 104 combinaciones
+completas, no solo contra este documento).
+
+### Perfilado (antes de optimizar)
+
+Se perfiló `run_simtsi_des` sobre **I06, cv=0.10, parámetros de producción exactos**
+(`short_reps=5`, `final_reps=500`, sin `--quick`) — la misma combinación ya completada en
+`des_I06_cv10.json` (`cpu_s=652.92 s`) — instrumentando con `time.perf_counter()` (no
+`cProfile`, para minimizar el overhead del propio perfilado) los puntos clave:
+`DESimulator.__init__`, `DESimulator.run_to_end`, `insert_neighbors`, `perturb`.
+
+| Función | Llamadas | Tiempo acumulado | % del total |
+|---|---|---|---|
+| `DESimulator.run_to_end` | 389,500 | 645.56 s | **95.91%** |
+| `DESimulator.__init__` (incl. `validate_solution`) | 389,500 | 9.65 s | 1.43% |
+| `insert_neighbors` (creación del generador) | 1,000 | 0.002 s | ~0% |
+| `perturb` | 40 | 0.001 s | ~0% |
+| **Total** | | **673.06 s** | 100% |
+
+389,500 = `short_reps(5) × tsi_evaluations(77,800) + final_reps(500)` — cuadra exactamente.
+
+**Confirmación de la hipótesis de la Fase 2c:** el costo dominante NO es la copia de
+soluciones ni la generación de vecinos (ambos ya negligibles tras la Fase 2c), sino el número
+de réplicas DES completas ejecutadas (95.9% del tiempo en `run_to_end`). El perfil no muestra
+nada distinto a lo ya documentado — solo lo cuantifica con precisión. Esto confirma que
+paralelizar exactamente ese bucle de réplicas (`short_reps` y `final_reps`) es el punto de
+mayor apalancamiento.
+
+### Implementación
+
+Se agregó `parallel_pool.py` (pool de procesos perezoso y reutilizable, `workers<=1` = sin
+pool, ruta secuencial sin cambios) y un parámetro `workers` que se propaga por toda la cadena
+de llamadas: `run_all.py --workers` (CLI, default 2) → `run()` → `run_simtsi_des` /
+`run_simtsi_mc` / `run_dynsimtsi_des` → `evaluate_des` / `evaluate_mc`. Los `reps` réplicas
+independientes se dividen en hasta `workers` bloques contiguos (`chunk_bounds()`), cada bloque
+se despacha como UNA tarea al pool (no una tarea por réplica, para acotar el número de
+round-trips de IPC), y los resultados se concatenan sin preservar orden — válido porque toda
+la agregación posterior (`mean`, `pstdev`, sumas/conteos) es invariante al orden de las filas.
+
+Para `DynSimTSI-DES` se paralelizó además el bucle externo de `budget.final_reps` réplicas de
+turno completo en `run_dynsimtsi_des` (cada una con sus propias reoptimizaciones tabú
+embebidas), no solo las réplicas dentro de `evaluate_des`, porque cada réplica de turno es una
+trayectoria de simulación totalmente independiente (sembrada por su propio índice de réplica,
+sin estado compartido, ver `random_streams.py`).
+
+Se usa `multiprocessing.Pool` (procesos, no hilos, como exige el encargo dado el GIL de
+Python/NumPy) y `--workers` es configurable (default **2**, no 4), justificado en
+`docs/PERFIL_MAQUINA.md`: con ~600-860 MB de RAM libre medidos en esta máquina, 4 procesos
+worker cada uno con su copia de la instancia arriesgan swapping.
+
+### Validación de no-regresión (resultado idéntico, secuencial vs paralelo)
+
+Se re-corrieron DOS combinaciones YA COMPLETADAS con `--workers 2` en un `--outdir` aislado
+(sin tocar `resultados_paper/raw/`) y se compararon campo por campo contra el JSON ya guardado
+(excluyendo `cpu_s`, que por definición difiere):
+
+| Combinación | Campos comparados | Resultado |
+|---|---|---|
+| `des_I06_cv10` | todos excepto `cpu_s` (incl. `mean_cmax_min`, `sd_cmax_min`, `tsi_evaluations`, `best_solution`) | **coincidencia exacta**, sin ninguna diferencia |
+| `dynamic_I06_cv10` | ídem | **coincidencia exacta**, sin ninguna diferencia |
+
+Esto confirma que el paralelismo no tiene bugs de estado compartido: al ser cada réplica
+independiente por semilla (`random_streams.py`), el orden de ejecución entre procesos no
+afecta el resultado agregado.
+
+### Speedup real medido en I06 (instancia mediana/pequeña, 6 loaders/12 jobs)
+
+| Combinación | `cpu_s` secuencial | `cpu_s` con `workers=2` | Speedup |
+|---|---|---|---|
+| `des_I06_cv10` | 652.92 s | 564.04 s | **1.16x** |
+| `dynamic_I06_cv10` | 649.94 s | 550.03 s | **1.18x** |
+
+**Hallazgo honesto, no anticipado:** el speedup en I06 es mucho menor que el ~2x ideal para 2
+procesos. Causa identificada por análisis de la granularidad: con `short_reps=5`, cada llamada
+a `evaluate_des()` durante la búsqueda tabú se divide en solo 2-3 réplicas por proceso —
+77,800 llamadas × 2 despachos cada una ≈ 155,600 round-trips de IPC entre procesos. En Windows
+(`multiprocessing` usa `spawn`, no `fork`; sin memoria compartida, cada tarea se serializa por
+`pickle` y viaja por un pipe) el overhead fijo por round-trip compite con el trabajo real de
+cada réplica individual (~1.7 ms en I06), de modo que una fracción sustancial del tiempo
+ahorrado en cómputo se pierde en la comunicación entre procesos. Esto NO es un bug: la
+paralelización es correcta (ver validación de arriba), simplemente su beneficio depende de que
+el trabajo por réplica sea grande frente al overhead de IPC — algo que se espera que mejore en
+instancias más grandes (I09/I10, con más loaders/jobs y por tanto más eventos y más tiempo de
+cómputo por réplica DES) y en el bucle externo de `DynSimTSI-DES` (que despacha solo
+`workers` tareas por corrida, no miles). Ver medición fresca en I09 más abajo antes de decidir
+el `--timeout-s` final.
+
+### Medición fresca en I09 con la versión paralela y decisión final de `--timeout-s`
+
+Se corrió `dynamic_I09_cv20` (la combinación que hizo timeout la sesión pasada a los 3600 s
+secuenciales) con `--workers 2` y un límite deliberadamente más generoso de **5400 s (90 min)**,
+en `--outdir` aislado, para ver si el paralelismo la hace viable:
+
+```
+.venv/Scripts/python.exe run_all.py --method dynamic --instance I09 --cv 0.20 --short-reps 5 \
+  --loader-release-rule load_only --workers 2 --timeout-s 5400 --outdir <aislado>
+```
+
+**Resultado: `status: "timeout"` otra vez**, a los 5400 s (elapsed_s=5723.5, incluye overhead
+del subproceso). Los 2 procesos worker mostraron ~60-62 min de CPU activa cada uno durante la
+corrida — no es un cuelgue, es cómputo real que no alcanza a terminar. **Con 2 procesos, esta
+combinación específica necesita más de 5400 s, no menos.**
+
+**Interpretación:** a diferencia de I06/I07 (donde `DynSimTSI-DES` casi no dispara
+reoptimizaciones, `mean_n_reoptimizations≈0`, y por tanto su costo es casi idéntico al de
+`SimTSI-DES`), en I09 el patrón cambia — la instancia más grande y/o el nivel de CV=0.20
+disparan reoptimizaciones con más frecuencia, cada una con su propia búsqueda tabú anidada
+completa (`max_iters=1000` de nuevo, evaluada con `_rollout_fitness`). Esa búsqueda anidada
+ocurre POR COMPLETO dentro de un solo proceso trabajador (no se sub-paraleliza más), así que el
+paralelismo del bucle externo de 500 réplicas (que si ayuda, ver Fase 6 arriba) tiene un techo:
+si una fracción de esas 500 réplicas dispara muchas reoptimizaciones costosas, el tiempo total
+no baja proporcionalmente a `workers`.
+
+**Decisión:** se fija `--timeout-s` en **4500 s (75 min)** para el resto de esta corrida (las
+16 combinaciones pendientes), un punto intermedio justificado por evidencia y no una
+extrapolación optimista:
+- Es sustancialmente mayor que los 3600 s de la Fase 5, dando margen real a `des`/`mc` en I10,
+  cuyo crecimiento (aplicando el factor real I08→I09 medido, 2722.47/1792.8≈1.52x, a I09→I10)
+  se extrapola en ~4135 s secuenciales para `des_I10` — por encima de 3600 s pero cubierto por
+  4500 s incluso sin contar el ~1.16x de mejora por paralelismo.
+- NO se sube a 5400 s ni más, porque ya hay evidencia directa (la medición de arriba) de que
+  5400 s con paralelismo NO fue suficiente para `dynamic_I09_cv20` — subir el límite "a ciegas"
+  persiguiendo específicamente esa combinación costaría horas adicionales de máquina sin
+  garantía de éxito, el mismo razonamiento que ya limitó la Fase 5 a 3600 s en vez de perseguir
+  I10 indefinidamente.
+- **Se acepta explícitamente que varias combinaciones `dynamic` de I09/I10 (las que disparen
+  reoptimizaciones con frecuencia) probablemente sigan sin terminar dentro de 4500 s.** Se
+  documentan en `run_manifest.json` y en `docs/INFORME_FINAL.md` cuáles quedaron sin resultado
+  y por qué, con esta medición como evidencia, en vez de perseguirlas indefinidamente — tal
+  como exige el Paso 5 del encargo.

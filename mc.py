@@ -4,6 +4,7 @@ from typing import List
 
 from models import Instance, validate_solution
 from random_streams import lognormal_mean_cv
+from parallel_pool import get_pool, chunk_bounds
 
 
 def _one_mc_rep(instance: Instance, solution: List[List[int]], cv: float,
@@ -38,12 +39,31 @@ def _one_mc_rep(instance: Instance, solution: List[List[int]], cv: float,
     return {'cmax': cmax, 'plant': plant, 'pad': pad}
 
 
+def _run_mc_rep_range(instance: Instance, solution: List[List[int]], cv: float,
+                      rep_start: int, rep_end: int, base_seed: int,
+                      loader_release_rule: str) -> List[dict]:
+    """One process-pool task per chunk of replications; see des._run_des_rep_range
+    for the rationale (persistent Pool, chunked to bound round trips)."""
+    return [_one_mc_rep(instance, solution, cv, r, base_seed, loader_release_rule)
+            for r in range(rep_start, rep_end)]
+
+
 def evaluate_mc(instance: Instance, solution: List[List[int]], cv: float,
                 reps: int, base_seed: int, penalty_per_ton_min: float = 1.0,
-                loader_release_rule: str = 'load_only') -> dict:
+                loader_release_rule: str = 'load_only', workers: int = 1) -> dict:
     if loader_release_rule not in ('load_only', 'full_cycle'):
         raise ValueError("loader_release_rule must be 'load_only' or 'full_cycle'")
-    rows = [_one_mc_rep(instance, solution, cv, r, base_seed, loader_release_rule) for r in range(reps)]
+    pool = get_pool(workers)
+    if pool is None:
+        rows = [_one_mc_rep(instance, solution, cv, r, base_seed, loader_release_rule) for r in range(reps)]
+    else:
+        # See des.evaluate_des: replications are independent and every metric
+        # below is order-invariant over rows, so chunked cross-process
+        # execution reproduces the sequential result exactly.
+        chunks = pool.starmap(_run_mc_rep_range,
+                              [(instance, solution, cv, a, b, base_seed, loader_release_rule)
+                               for a, b in chunk_bounds(reps, workers)])
+        rows = [row for chunk in chunks for row in chunk]
     c = [x['cmax'] for x in rows]
     plant = [x['plant'] for x in rows]
     pad = [x['pad'] for x in rows]

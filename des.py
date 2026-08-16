@@ -7,6 +7,7 @@ from typing import List, Dict, Optional
 
 from models import Instance, validate_solution
 from random_streams import lognormal_mean_cv
+from parallel_pool import get_pool, chunk_bounds
 
 class DESimulator:
     """Custom discrete-event simulator for one stochastic full-shift replication."""
@@ -153,12 +154,35 @@ class DESimulator:
         }
 
 
+def _run_des_rep_range(instance: Instance, solution: List[List[int]], cv: float,
+                       rep_start: int, rep_end: int, base_seed: int) -> List[dict]:
+    """Run replications [rep_start, rep_end) sequentially; used as one process-pool
+    task per chunk so a persistent Pool needs only `workers` round trips per
+    evaluate_des() call instead of one per replication."""
+    return [DESimulator(instance, solution, cv, r, base_seed).run_to_end()
+            for r in range(rep_start, rep_end)]
+
+
 def evaluate_des(instance: Instance, solution: List[List[int]], cv: float,
-                 reps: int, base_seed: int, penalty_per_ton_min: float = 1.0) -> dict:
-    rows = []
-    for r in range(reps):
-        sim = DESimulator(instance, solution, cv, r, base_seed)
-        rows.append(sim.run_to_end())
+                 reps: int, base_seed: int, penalty_per_ton_min: float = 1.0,
+                 workers: int = 1) -> dict:
+    pool = get_pool(workers)
+    if pool is None:
+        rows = []
+        for r in range(reps):
+            sim = DESimulator(instance, solution, cv, r, base_seed)
+            rows.append(sim.run_to_end())
+    else:
+        # Replications are independent (random_streams.py keys every seed on
+        # (base_seed, replicate, job, component, loader), never on execution
+        # order or process), and every downstream metric below is a mean/sum/
+        # count over `rows`, which is order-invariant — so chunking across
+        # processes and concatenating results in arbitrary order reproduces
+        # the sequential result exactly (see docs/DECISIONES.md, Fase 6).
+        chunks = pool.starmap(_run_des_rep_range,
+                              [(instance, solution, cv, a, b, base_seed)
+                               for a, b in chunk_bounds(reps, workers)])
+        rows = [row for chunk in chunks for row in chunk]
     c = [x['cmax'] for x in rows]
     plant = [x['plant'] for x in rows]; pad = [x['pad'] for x in rows]
     shortfall = [max(0.0, instance.meta_plant-p)+max(0.0, instance.meta_pad-q) for p,q in zip(plant,pad)]
