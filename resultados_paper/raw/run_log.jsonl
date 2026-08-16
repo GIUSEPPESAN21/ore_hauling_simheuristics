@@ -810,3 +810,6 @@
 {"method": "mc", "instance": "I09", "cv": 0.1, "quick": false, "tag": "mc_I09_cv10", "status": "ok", "elapsed_s": 2273.1252757999973}
 {"method": "des", "instance": "I09", "cv": 0.1, "quick": false, "tag": "des_I09_cv10", "status": "ok", "elapsed_s": 2916.149520400002}
 {"method": "dynamic", "instance": "I09", "cv": 0.1, "quick": false, "tag": "dynamic_I09_cv10", "status": "ok", "elapsed_s": 3021.333345399995}
+{"method": "mc", "instance": "I09", "cv": 0.2, "quick": false, "tag": "mc_I09_cv20", "status": "ok", "elapsed_s": 2219.2295478000015}
+{"method": "des", "instance": "I09", "cv": 0.2, "quick": false, "tag": "des_I09_cv20", "status": "ok", "elapsed_s": 2722.467272199996}
+{"method": "dynamic", "instance": "I09", "cv": 0.2, "quick": false, "tag": "dynamic_I09_cv20", "status": "timeout", "elapsed_s": 3601.1099517999974, "error": "TIMEOUT"}
