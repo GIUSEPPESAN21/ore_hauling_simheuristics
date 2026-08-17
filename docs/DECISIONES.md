@@ -588,3 +588,134 @@ metodología de `docs/PERFIL_MAQUINA.md`), con el batch ya corriendo: **0.65 GB 
 (0.55-0.86 GB en mediciones anteriores) — sigue siendo la misma máquina con la misma presión de
 memoria. **Decisión: se mantiene `--workers 2`**, sin probar 3, siguiendo el criterio ya
 establecido de no subir el paralelismo "a ver qué pasa" sin evidencia de margen real.
+
+## Fase 7 — Cierre del lote y decisiones finales (sesión 2026-08-17)
+
+### Diagnóstico al retomar (verificado, no asumido)
+
+- **Proceso del batch anterior (PID 18528, `resultados_paper/raw/batch.pid`): ya no está en
+  ejecución** — confirmado con `Get-CimInstance Win32_Process -Filter "ProcessId=18528"` (sin
+  resultado). `run_log.jsonl` termina en `dynamic_I10_cv20` con `status: "ok"` (elapsed_s≈2781 s);
+  la pausa fue limpia, no un cuelgue.
+- **Sin workers huérfanos:** `Get-CimInstance Win32_Process -Filter "Name='python.exe'"` no
+  devolvió ningún proceso antes de relanzar nada.
+- **115/120 combinaciones confirmadas por conteo directo de archivos** en
+  `resultados_paper/raw/` (no por el número reportado por el usuario, que se verificó
+  independientemente): 39 `des_*.json` + 37 `dynamic_*.json` + 39 `mc_*.json` = 115. Coincide
+  con `summary.csv` (115 filas de datos + encabezado). Las **5 combinaciones pendientes**,
+  confirmadas contra `run_log.jsonl`, son exactamente:
+  - `dynamic_I09_cv20` — `status: "timeout"` a 4500.76 s (cierre definitivo de la Fase 6).
+  - `dynamic_I09_cv30` — `status: "timeout"` a 4501.47 s (cierre definitivo de la Fase 6).
+  - `mc_I10_cv30`, `des_I10_cv30`, `dynamic_I10_cv30` — nunca intentadas (el log se detiene en
+    `dynamic_I10_cv20`, justo antes de llegar a cv=0.30).
+
+### Decisión Paso 2 — última oportunidad ampliada para dynamic_I09_cv20/cv30
+
+`dynamic_I09_cv20` y `dynamic_I09_cv30` ya fallaron por timeout dos veces cada una en sesiones
+previas: a 3600 s (Fase 5, secuencial) y a 4500 s (Fase 6, con `--workers 2`); `dynamic_I09_cv20`
+además falló una tercera vez a 5400 s en una prueba aislada con `--workers 2` (Fase 6), con los 2
+procesos worker acumulando **~60-62 min de CPU real cada uno** sin terminar — evidencia de cómputo
+real (reoptimizaciones tabú anidadas costosas), no de un cuelgue. Subir el límite otra vez "a
+ciegas" no está justificado sin más evidencia.
+
+**Decisión:** se les da una única oportunidad adicional con `--timeout-s 7200` (2 h, un salto
+justificado por ser sustancialmente mayor que el máximo ya fallido de 5400 s, pero no indefinido),
+`--workers 2` (sin cambios, es el valor ya validado por RAM en Fases 5-6), corriendo **en
+paralelo entre sí y en paralelo con el resto del lote** (`I10_cv30`, las 3 combinaciones nunca
+intentadas, con el timeout normal de 4500 s), tal como exige el encargo del usuario.
+
+**RAM antes de lanzar:** se midió con `Get-CimInstance Win32_OperatingSystem` con CERO procesos
+Python corriendo: **0.22 GB libres de 7.33 GB totales (97% en uso)** — más ajustado que el rango
+0.55-0.86 GB medido en Fases 5-6 con el batch ya corriendo, pero consistente con que esta máquina
+tiene presión de memoria estructural (no causada por nuestro propio batch, ver
+`docs/PERFIL_MAQUINA.md`) y con que las Fases 5-6 sí completaron 115 combinaciones con
+`--workers 2` sin fallos por memoria. Se decide proceder con los 3 procesos en paralelo
+(`--workers 2` cada uno) confiando en ese historial, en vez de reducir a `--workers 1` "por las
+dudas" sin evidencia de que haga falta — si se observan problemas reales (falla de proceso,
+bloqueo) se documentará aquí.
+
+**Comandos lanzados** (2026-08-17, ~08:22, procesos Windows desacoplados vía `Start-Process`,
+stdout/stderr redirigidos a `resultados_paper/raw/ext_*` y `batch_I10_cv30_*`, PID en
+`resultados_paper/raw/*.pid`):
+
+```
+# PID 15260 — timeout ampliado, única oportunidad adicional
+.venv/Scripts/python.exe run_all.py --method dynamic --instance I09 --cv 0.20 --short-reps 5 \
+  --loader-release-rule load_only --workers 2 --timeout-s 7200 --outdir resultados_paper/raw
+
+# PID 7716 — timeout ampliado, única oportunidad adicional
+.venv/Scripts/python.exe run_all.py --method dynamic --instance I09 --cv 0.30 --short-reps 5 \
+  --loader-release-rule load_only --workers 2 --timeout-s 7200 --outdir resultados_paper/raw
+
+# PID 13828 — resto del lote, timeout normal (nunca antes intentadas)
+.venv/Scripts/python.exe run_all.py --method all --instance I10 --cv 0.30 --short-reps 5 \
+  --loader-release-rule load_only --workers 2 --timeout-s 4500 --outdir resultados_paper/raw
+```
+
+**Resultado medido** (los 3 procesos corrieron en paralelo desde ~08:22 hasta su cierre
+individual, confirmado leyendo `run_log.jsonl` y contando archivos `.json` reales en
+`resultados_paper/raw/`, no asumido):
+
+| Combinación | Resultado | Tiempo medido | Nota |
+|---|---|---|---|
+| `mc_I10_cv30` | **ok** | 3686.85 s (≈61.4 min) | dentro del timeout normal de 4500 s |
+| `des_I10_cv30` | **ok** | 3999.50 s (≈66.7 min) | dentro del timeout normal de 4500 s |
+| `dynamic_I10_cv30` | **ok** | 3041.90 s (≈50.7 min) | dentro del timeout normal de 4500 s |
+| `dynamic_I09_cv20` | **timeout** (definitivo) | 7201.35 s (≈120.0 min) | agotó el límite ampliado de 7200 s |
+| `dynamic_I09_cv30` | **timeout** (definitivo) | 7201.29 s (≈120.0 min) | agotó el límite ampliado de 7200 s |
+
+**Las 3 combinaciones de I10 cv=0.30 (las más grandes y costosas de toda la matriz) terminaron
+sin problema** con la configuración normal (`--workers 2`, `--timeout-s 4500`), confirmando que
+la medición previa (no la extrapolación) era lo correcto: no hacía falta asumir de antemano que
+fueran a fallar.
+
+**`dynamic_I09_cv20` y `dynamic_I09_cv30` agotaron también el límite ampliado de 7200 s (2 h).**
+Con esto se cierra la "última oportunidad" declarada arriba: NO se sube el timeout más allá de
+7200 s para perseguirlas. **Se aceptan como "no completadas por costo computacional"**, con la
+evidencia de tiempo medido en esta tabla y en `run_log.jsonl` (más los ~60-62 min de CPU real
+por worker ya medidos en un intento anterior, Fase 6) — un resultado honesto y reportable en el
+paper, no un fallo a ocultar. El patrón es consistente con lo ya documentado: `DynSimTSI-DES` en
+I09 con CV∈{0.20, 0.30} dispara reoptimizaciones con la frecuencia suficiente para que el costo
+de la búsqueda tabú anidada exceda cualquier límite de tiempo razonable en esta máquina, mientras
+que la misma combinación en I10 (instancia más grande) sí termina — evidencia de que el costo no
+depende solo del tamaño de la instancia sino de cuántas reoptimizaciones dispara cada réplica,
+algo que varía por instancia/CV de forma no estrictamente monótona.
+
+**Cierre de la sesión:** `resultados_paper/raw/` termina con **118/120 combinaciones `"ok"`** y
+**2/120 `"timeout"` definitivo** (`dynamic_I09_cv20`, `dynamic_I09_cv30`). 0 fallidas, 0 sin
+intentar. Verificado con `Get-CimInstance Win32_Process -Filter "Name='python.exe'"` tras el
+cierre: **0 procesos Python vivos, ningún huérfano.** `resultados_paper/run_manifest.json` y
+`resultados_paper/RESUMEN_PARA_PAPER.md` se regeneraron con `generate_deliverables.py` (nuevo,
+este mismo pase) reflejando este estado definitivo.
+
+### Decisión pendiente para el usuario — SimTSI-MC sin contención en destinos (Paso 4)
+
+Señalado desde la Fase 2a (arriba) y NUNCA corregido, deliberadamente, porque es una decisión de
+modelado y no un bug: `mc.py`/`simtsi_mc.py` no modela colas en los puntos de descarga
+(Plant/Pad). Cada `dump` ocurre en `dump_end = start+load+haul+dump`, sin verificar si el destino
+ya está ocupado por otro camión. `des.py`/`simtsi_des.py`, en cambio, sí encola los dumps por
+destino (`dest_busy`, `dest_queue`). Esto es una segunda fuente de discrepancia estructural entre
+SimTSI-MC y SimTSI-DES (además de la ya corregida en la Fase 2a sobre la liberación del loader),
+visible cuando varios loaders alimentan el mismo destino en un intervalo corto — exactamente el
+tipo de congestión que aparece en instancias grandes con múltiples loaders (I06-I10).
+
+**Opción (a) — dejarlo así, documentarlo como limitación aceptada del método en el paper.**
+Implica: los resultados de SimTSI-MC ya calculados (las 39 combinaciones completas) siguen
+siendo válidos tal cual, cero recorridas adicionales, cero riesgo de retrasar el cierre del lote.
+A cambio, cualquier comparación cuantitativa MC-vs-DES en el paper debe presentarse con esta
+limitación explícita: MC subestima sistemáticamente la congestión en destinos (y por tanto
+`mean_cmax_min`, `mean_truck_wait_min`, utilizaciones de Plant/Pad) en instancias donde varios
+loaders convergen al mismo destino en ventanas cortas de tiempo — el tamaño del sesgo no está
+cuantificado todavía.
+
+**Opción (b) — corregirlo antes de la corrida con las instancias reales.** Implica: cambiar
+`mc.py` para modelar contención en destinos (aproximación de colas, no un Monte Carlo "puro"),
+lo que invalida los resultados de SimTSI-MC ya calculados (39 combinaciones) y obliga a
+re-correr esa parte completa del lote (~40 combinaciones × el tiempo ya medido por instancia,
+del orden de horas adicionales de máquina en esta sesión o la siguiente). También cambia la
+naturaleza metodológica de SimTSI-MC (deja de ser un Monte Carlo sin colas, se acerca más a DES),
+lo que puede requerir ajustar cómo se describe el método en el paper.
+
+**No se toma esta decisión por cuenta propia.** Se deja señalada aquí, con las dos opciones y sus
+implicaciones concretas, para que el usuario decida antes de dar el lote por definitivamente
+cerrado para el paper.

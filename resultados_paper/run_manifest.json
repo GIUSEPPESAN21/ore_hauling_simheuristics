@@ -1,61 +1,18 @@
 {
-  "generated_at_local": "2026-08-16T14:20:21.305336-05:00",
-  "generated_at_utc": "2026-08-16T19:20:21.306338+00:00",
-  "status_note": "Snapshot PROVISIONAL: el proceso del lote (PID en resultados_paper/raw/batch.pid) seguia en ejecucion en segundo plano al momento de generar este manifiesto. 104/120 combinaciones estan completas y validadas (ver validacion en docs/INFORME_FINAL.md); las 16 restantes se marcan explicitamente como 'pendiente_en_curso' (1, la que el lote esta ejecutando ahora mismo) o 'pendiente_no_iniciada' (15, aun no alcanzadas por el orden I01->I10 del lote). Este archivo debe regenerarse cuando el lote llegue a su estado final.",
-  "batch_pid_at_generation_time": "18528",
-  "machine_profile": {
-    "cpu": "AMD Ryzen 5 7520U with Radeon Graphics",
-    "physical_cores": 4,
-    "logical_cores": 8,
-    "ram_total_bytes": 7865888768,
-    "ram_total_gib_1024": 7.33,
-    "ram_total_gb_decimal_1000": 7.87,
-    "ram_free_measurements_gb": [
-      {
-        "value_gb": 0.55,
-        "when": "2026-08-14 (perfilado inicial, ver docs/PERFIL_MAQUINA.md)",
-        "source": "docs/PERFIL_MAQUINA.md"
-      },
-      {
-        "value_gb": "0.55-0.86 (rango)",
-        "when": "Mediciones previas citadas en docs/DECISIONES.md Fase 6 antes del re-chequeo del 2026-08-16 (no hay una segunda medicion puntual documentada por separado en docs/PERFIL_MAQUINA.md; el 0.86 GB aparece como cota superior del rango observado, referenciado tambien como \"~600-860 MB\" en la seccion de implementacion de la Fase 6)",
-        "source": "docs/DECISIONES.md, Fase 6"
-      },
-      {
-        "value_gb": 0.65,
-        "when": "2026-08-16 (re-chequeo con psutil, misma metodologia, con el lote ya corriendo, antes de decidir si subir workers de 2 a 3)",
-        "source": "docs/DECISIONES.md, Fase 6, seccion \"Re-chequeo de RAM antes de subir --workers\""
-      }
-    ],
-    "note": "Portatil de gama baja/media, RAM muy ajustada en las tres mediciones (0.55-0.86 GB libres de ~7.3-7.9 GB totales, <=~12% libre). Es la base de la decision de mantener workers=2. Ver docs/PERFIL_MAQUINA.md."
-  },
+  "generated_at_local": "2026-08-17T11:21:42.731600-05:00",
+  "generated_at_utc": "2026-08-17T16:21:42.731600+00:00",
+  "status_note": "Estado DEFINITIVO del lote: 118/120 combinaciones completas y validadas; 2 no completadas por costo computacional (timeout, evidencia de tiempo medido en cada entrada); 0 con error; 0 nunca intentadas. Lote cerrado para esta ronda de corridas.",
   "configuration": {
     "short_reps": 5,
     "short_reps_default_in_config_py": 20,
-    "short_reps_note": "SimBudget.short_reps sigue siendo 20 por defecto en config.py (sin tocar); se pasa --short-reps 5 explicitamente en cada invocacion del lote (Fase 4), justificado por un analisis de estabilidad en I02/I03 que mostro que el TSI converge a la MISMA solucion final (mean_cmax_min identico a 4+ decimales) con short_reps en {3,5,10,20}; solo el search_fitness interno (que nunca se reporta) varia <0.05%.",
     "final_reps": 500,
     "loader_release_rule": "load_only",
-    "loader_release_rule_note": "Fase 2a: se unifico mc.py para liberar el loader al terminar de cargar ('load_only'), igual que des.py, en vez de al terminar el ciclo completo del camion ('full_cycle', preservado como opcion no usada en el lote). Sin este cambio mc.py y des.py daban cmax distintos (54.0 vs 35.0 min) en un caso de prueba determinista con congestion.",
-    "timeout_s": 4500,
-    "timeout_s_history": [
-      {
-        "value_s": 900,
-        "phase": "Fase 4",
-        "reason": "Valor de partida (15 min) para el plan de ejecucion del lote de 120 combinaciones, antes de tener mediciones reales en instancias grandes; buscaba acotar el tiempo por combinacion sin bloquear el lote."
-      },
-      {
-        "value_s": 3600,
-        "phase": "Fase 5",
-        "reason": "Se subio a 1 hora tras medir I08 (SimTSI-DES) en 1792.8 s real sin limite: 900 s era claramente insuficiente (ya habia matado corridas de I07). 3600 s da ~2x de margen sobre I08 y algo de holgura para mc/dynamic y CVs mas lentos."
-      },
-      {
-        "value_s": 4500,
-        "phase": "Fase 6",
-        "reason": "Tras paralelizar (workers=2) y medir que dynamic_I09_cv20 seguia sin terminar incluso con 5400 s (90 min) de limite, se fijo un punto intermedio de 75 min: mayor que 3600 s (da margen a des_I10, extrapolado en ~4135 s secuenciales a partir del factor de crecimiento real I08->I09), pero sin subir a 5400 s+ porque ya hay evidencia directa de que eso tampoco alcanza para las combinaciones dynamic mas costosas de I09/I10 y perseguirlas indefinidamente no se justifica."
-      }
-    ],
+    "timeout_s_default": 4500,
+    "timeout_s_extended_for": {
+      "dynamic_I09_cv20": 7200,
+      "dynamic_I09_cv30": 7200
+    },
     "workers": 2,
-    "workers_note": "Se probo (perfilado, no en produccion) subir a mas de 2 workers, pero se descarto: RAM libre re-chequeada con psutil el 2026-08-16, con el lote ya corriendo, dio 0.65 GB libres de 7.87 GB totales (91.7% en uso) — no sustancialmente distinto del rango 0.55-0.86 GB ya medido antes. Con esa presion de memoria, sumar un tercer proceso worker (cada uno con su propia copia de la instancia y del pool de multiprocessing) arriesga swapping en esta maquina de 4 nucleos fisicos / ~7.3-7.9 GB RAM. Se mantiene workers=2, mismo criterio ya usado de no subir paralelismo sin evidencia de margen real.",
     "tsi_params": {
       "tenure": 10,
       "max_iters": 1000,
@@ -68,14 +25,19 @@
       "rollout_base_seed": 900000
     }
   },
+  "known_limitation_pending_decision": {
+    "topic": "SimTSI-MC no modela contencion en destinos (Plant/Pad)",
+    "ref": "docs/DECISIONES.md, Fase 2a y Fase 7",
+    "decided": false
+  },
   "totals": {
     "expected": 120,
-    "ok": 104,
-    "timeout": 0,
+    "ok": 118,
+    "timeout": 2,
     "failed": 0,
-    "pendiente_en_curso": 1,
-    "pendiente_no_iniciada": 15
+    "no_intentada": 0
   },
+  "anomalies": [],
   "combinations": [
     {
       "tag": "mc_I01_cv05",
@@ -1122,128 +1084,158 @@
       "method": "DynSimTSI-DES",
       "instance": "I09",
       "cv": 0.2,
-      "status": "pendiente_en_curso",
-      "note": "El proceso del lote (ver batch.pid) esta reintentando esta combinacion en este momento, con --timeout-s 4500 y el fix del bug de procesos huerfanos (Fase 6). Intentos previos documentados: 1 timeout(s) registrados en run_log.jsonl (ultimo a los 3601.1 s, limite vigente en ese momento) mas un intento adicional durante la Fase 6 que quedo colgado >50 min por el bug de procesos huerfanos (no llego a registrarse como timeout limpio; se mato manualmente, ver docs/DECISIONES.md)."
+      "status": "timeout",
+      "elapsed_s": 7201.353945800016,
+      "note": "No completó dentro del timeout configurado para esta corrida (7201.4 s medidos). Ver docs/DECISIONES.md."
     },
     {
       "tag": "mc_I09_cv30",
       "method": "SimTSI-MC",
       "instance": "I09",
       "cv": 0.3,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 1899.6162225000007,
+      "mean_cmax_min": 1031.32898226479,
+      "replications": 500
     },
     {
       "tag": "des_I09_cv30",
       "method": "SimTSI-DES",
       "instance": "I09",
       "cv": 0.3,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 2244.7483364000072,
+      "mean_cmax_min": 1031.32898226479,
+      "replications": 500
     },
     {
       "tag": "dynamic_I09_cv30",
       "method": "DynSimTSI-DES",
       "instance": "I09",
       "cv": 0.3,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "timeout",
+      "elapsed_s": 7201.292686100001,
+      "note": "No completó dentro del timeout configurado para esta corrida (7201.3 s medidos). Ver docs/DECISIONES.md."
     },
     {
       "tag": "mc_I10_cv05",
       "method": "SimTSI-MC",
       "instance": "I10",
       "cv": 0.05,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 2277.1944913000043,
+      "mean_cmax_min": 1094.8163469331432,
+      "replications": 500
     },
     {
       "tag": "des_I10_cv05",
       "method": "SimTSI-DES",
       "instance": "I10",
       "cv": 0.05,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 2901.8185927000013,
+      "mean_cmax_min": 1094.8163469331432,
+      "replications": 500
     },
     {
       "tag": "dynamic_I10_cv05",
       "method": "DynSimTSI-DES",
       "instance": "I10",
       "cv": 0.05,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 2872.965713999991,
+      "mean_cmax_min": 1094.8163469331432,
+      "replications": 500
     },
     {
       "tag": "mc_I10_cv10",
       "method": "SimTSI-MC",
       "instance": "I10",
       "cv": 0.1,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 2293.4484697000007,
+      "mean_cmax_min": 1094.7683148845676,
+      "replications": 500
     },
     {
       "tag": "des_I10_cv10",
       "method": "SimTSI-DES",
       "instance": "I10",
       "cv": 0.1,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 2779.251739200001,
+      "mean_cmax_min": 1094.7683148845676,
+      "replications": 500
     },
     {
       "tag": "dynamic_I10_cv10",
       "method": "DynSimTSI-DES",
       "instance": "I10",
       "cv": 0.1,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 2782.299010900024,
+      "mean_cmax_min": 1094.7683148845676,
+      "replications": 500
     },
     {
       "tag": "mc_I10_cv20",
       "method": "SimTSI-MC",
       "instance": "I10",
       "cv": 0.2,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 2292.5960803999915,
+      "mean_cmax_min": 1094.6748284807115,
+      "replications": 500
     },
     {
       "tag": "des_I10_cv20",
       "method": "SimTSI-DES",
       "instance": "I10",
       "cv": 0.2,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 2733.5827231000003,
+      "mean_cmax_min": 1094.6748284807115,
+      "replications": 500
     },
     {
       "tag": "dynamic_I10_cv20",
       "method": "DynSimTSI-DES",
       "instance": "I10",
       "cv": 0.2,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 2778.562189499993,
+      "mean_cmax_min": 1094.6748284807115,
+      "replications": 500
     },
     {
       "tag": "mc_I10_cv30",
       "method": "SimTSI-MC",
       "instance": "I10",
       "cv": 0.3,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 3680.320650400012,
+      "mean_cmax_min": 1094.6010252851513,
+      "replications": 500
     },
     {
       "tag": "des_I10_cv30",
       "method": "SimTSI-DES",
       "instance": "I10",
       "cv": 0.3,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 3995.9312963999982,
+      "mean_cmax_min": 1094.6010252851513,
+      "replications": 500
     },
     {
       "tag": "dynamic_I10_cv30",
       "method": "DynSimTSI-DES",
       "instance": "I10",
       "cv": 0.3,
-      "status": "pendiente_no_iniciada",
-      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+      "status": "ok",
+      "cpu_s": 3040.349512899993,
+      "mean_cmax_min": 1094.6010252851513,
+      "replications": 500
     }
   ]
 }

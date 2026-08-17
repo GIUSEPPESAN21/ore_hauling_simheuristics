@@ -211,32 +211,46 @@ entregables).
 
 ## 4. Estado final del lote
 
-<!-- PENDIENTE: completar cuando el lote termine -->
+**Cerrado el 2026-08-17. 118 de 120 combinaciones (98.3%) terminaron `"ok"` y pasaron
+validación** (500 réplicas, `mean_cmax_min` finito y positivo, probabilidades en `[0, 1]`, campos
+`instance`/`method`/`cv` del JSON consistentes con el nombre de archivo) — verificado
+programáticamente por `generate_deliverables.py` contra los archivos reales en
+`resultados_paper/raw/`, no por un conteo manual. **0 anomalías de validación** encontradas en
+las 118. **0 combinaciones fallidas por excepción. 0 nunca intentadas.**
 
-Esta sección debe llenarse cuando el proceso del lote (`resultados_paper/raw/batch.pid`, PID
-18528 al momento de escribir este informe) termine o se detenga definitivamente. Instrucciones
-para completarla:
+**2 de 120 (1.7%) no se completaron, ambas por costo computacional, no por un error del
+código:**
 
-1. Confirmar que el proceso ya no está en ejecución (`tasklist` / `Get-Process -Id <pid>`) y que
-   no quedó ningún `python.exe` huérfano relacionado (ver el bug de la Fase 6).
-2. Regenerar `resultados_paper/run_manifest.json` y `resultados_paper/RESUMEN_PARA_PAPER.md` con
-   los scripts usados en este pase (o equivalentes), para que reflejen el estado definitivo en
-   vez de este snapshot provisional (104/120 al momento de escribir este informe).
-3. Reportar aquí, con números concretos:
-   - Cuántas de las 120 combinaciones terminaron `"ok"` (y pasaron la validación: 500
-     réplicas, `mean_cmax_min > 0`, probabilidades en `[0, 1]`, sin NaN, y los campos
-     `instance`/`method`/`cv` del JSON coincidiendo con el nombre de archivo).
-   - Cuáles NO terminaron, con su tag exacto, método/instancia/CV, y por qué (timeout a los
-     4500 s, fallo con excepción, u otra causa) — usando el tiempo transcurrido real como
-     evidencia, no una suposición.
-   - Si alguna combinación previamente marcada como pendiente en este informe terminó con un
-     resultado que NO pasa la validación (por ejemplo NaN o probabilidad fuera de rango), debe
-     reportarse aquí como anomalía explícita, igual que se hizo para las 104 combinaciones ya
-     validadas en este pase (ninguna anomalía encontrada en esas 104).
-   - Si el lote se detuvo antes de llegar a las 120 (por corte manual, cuelgue, o error no
-     recuperable), documentar el diagnóstico igual que se hizo en las Fases 5 y 6 (leyendo
-     `run_log.jsonl` y comparando contra los JSON realmente presentes en
-     `resultados_paper/raw/`, nunca asumiendo el estado sin verificarlo).
-4. Actualizar la nota de "snapshot provisional" al inicio de
-   `resultados_paper/RESUMEN_PARA_PAPER.md` y el campo `status_note` de
-   `resultados_paper/run_manifest.json` para que dejen de decir que el lote sigue corriendo.
+| Combinación | Instancia | CV | Método | Intentos y evidencia |
+|---|---|---|---|---|
+| `dynamic_I09_cv20` | I09 (9 loaders/18 jobs) | 0.20 | DynSimTSI-DES | timeout a 3601.1 s (Fase 5, límite 3600 s) → timeout a 4500.8 s (Fase 6, límite 4500 s) → timeout a 5723.5 s en una prueba aislada con límite de 5400 s, con **~60-62 min de CPU real por worker** (Fase 6) → **timeout definitivo a 7201.4 s** (Fase 7, límite ampliado de 7200 s, última oportunidad) |
+| `dynamic_I09_cv30` | I09 (9 loaders/18 jobs) | 0.30 | DynSimTSI-DES | timeout a 4501.5 s (Fase 6, límite 4500 s) → **timeout definitivo a 7201.3 s** (Fase 7, límite ampliado de 7200 s, última oportunidad) |
+
+Ambas combinaciones tuvieron una única oportunidad adicional con `--timeout-s 7200` (2 h, el
+doble del límite estándar de producción) corriendo en paralelo con el resto del lote, según lo
+decidido explícitamente en `docs/DECISIONES.md` (Fase 7). Ninguna terminó dentro de ese margen.
+**Se acepta este resultado como definitivo y se documenta con la evidencia de arriba, en vez de
+seguir subiendo el límite de tiempo indefinidamente** — el patrón (reoptimizaciones tabú
+anidadas disparadas con frecuencia en `DynSimTSI-DES` para I09 en estos niveles de CV
+específicamente, ver Fase 6) es consistente en los 3-4 intentos y no sugiere que un límite mayor
+vaya a cambiar el desenlace en un tiempo razonable. Para contraste: las 3 combinaciones de I10
+cv=0.30 (10 loaders/20 jobs, la instancia más grande de toda la matriz) sí terminaron sin
+problema con el timeout normal de 4500 s (`mc_I10_cv30`: 3686.9 s; `des_I10_cv30`: 3999.5 s;
+`dynamic_I10_cv30`: 3041.9 s) — confirma que el costo no depende solo del tamaño de la instancia,
+sino de cuántas reoptimizaciones dispara cada réplica de `DynSimTSI-DES`, algo específico de
+I09 en CV∈{0.20, 0.30} y no extrapolable de forma monótona por tamaño de instancia.
+
+Verificado al cierre: `Get-CimInstance Win32_Process -Filter "Name='python.exe'"` no devuelve
+ningún proceso — el batch terminó limpio, sin huérfanos.
+
+**`resultados_paper/run_manifest.json` y `resultados_paper/RESUMEN_PARA_PAPER.md` fueron
+regenerados** con `generate_deliverables.py` (nuevo en este pase, reutilizable) a partir del
+estado real de `resultados_paper/raw/` — ya no reflejan el snapshot provisional de 104/120.
+
+**Decisión pendiente para el usuario, señalada explícitamente y sin resolver en este pase:**
+`SimTSI-MC` no modela contención en los puntos de descarga (Plant/Pad), a diferencia de
+`SimTSI-DES` (ver Fase 2a). Esto es una segunda fuente de discrepancia estructural entre ambos
+métodos, además de la ya corregida sobre la liberación del loader. `docs/DECISIONES.md` (Fase 7)
+presenta las dos opciones concretas (aceptar como limitación documentada del método vs.
+corregirlo y re-correr las 39 combinaciones de SimTSI-MC ya calculadas) para que el usuario
+decida antes de dar el lote por definitivamente cerrado para el paper.

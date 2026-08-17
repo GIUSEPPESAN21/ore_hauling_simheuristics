@@ -1,10 +1,12 @@
 # Resumen de resultados para el paper
 
-Generado automáticamente a partir de `resultados_paper/raw/summary.csv` y `resultados_paper/run_manifest.json` (snapshot generado el 2026-08-16 14:20:21).
+Generado automáticamente por `generate_deliverables.py` a partir de `resultados_paper/raw/` (snapshot generado el 2026-08-17 11:21:42).
 
-**Estado del lote en este snapshot:** 104 de 120 combinaciones completas y validadas (ver criterios de validación en `docs/INFORME_FINAL.md`); el proceso del lote seguía corriendo en segundo plano al generar este resumen. Este documento debe regenerarse cuando el lote llegue a su estado final — ver la sección "Combinaciones pendientes" más abajo para el detalle exacto de lo que falta.
+**Estado del lote:** Estado DEFINITIVO del lote: 118/120 combinaciones completas y validadas; 2 no completadas por costo computacional (timeout, evidencia de tiempo medido en cada entrada); 0 con error; 0 nunca intentadas. Lote cerrado para esta ronda de corridas.
 
 **Nota importante:** las 10 instancias (I01-I10) son **surrogate** — datos sintéticos generados para verificación de código, marcados explícitamente como `SURROGATE` en `data/instances/*.json` (`provenance_note`). No representan la operación real de la mina; deben reemplazarse por las instancias originales exactas antes de reportar estos números como resultados operativos en el artículo final.
+
+**Decisión de diseño pendiente para el paper (no resuelta en este pase):** `SimTSI-MC` no modela contención en los puntos de descarga (Plant/Pad), a diferencia de `SimTSI-DES`. Ver `docs/DECISIONES.md`, Fase 7, para las dos opciones concretas — esto afecta cómo se debe presentar cualquier comparación cuantitativa MC-vs-DES.
 
 ## Tabla de métricas clave por instancia, CV y método
 
@@ -114,33 +116,30 @@ Generado automáticamente a partir de `resultados_paper/raw/summary.csv` y `resu
 | I09 | 9/18 | 0.1 | Dinámico | 1031.1 | 1.4 | 1.00 | 1.00 | 1.00 | 0.0 |
 | I09 | 9/18 | 0.2 | MC | 1031.2 | 2.9 | 1.00 | 1.00 | 1.00 | - |
 | I09 | 9/18 | 0.2 | DES | 1031.2 | 2.9 | 1.00 | 1.00 | 1.00 | - |
+| I09 | 9/18 | 0.3 | MC | 1031.3 | 4.4 | 1.00 | 1.00 | 1.00 | - |
+| I09 | 9/18 | 0.3 | DES | 1031.3 | 4.4 | 1.00 | 1.00 | 1.00 | - |
+| I10 | 10/20 | 0.05 | MC | 1094.8 | 0.7 | 1.00 | 1.00 | 1.00 | - |
+| I10 | 10/20 | 0.05 | DES | 1094.8 | 0.7 | 1.00 | 1.00 | 1.00 | - |
+| I10 | 10/20 | 0.05 | Dinámico | 1094.8 | 0.7 | 1.00 | 1.00 | 1.00 | 0.0 |
+| I10 | 10/20 | 0.1 | MC | 1094.8 | 1.4 | 1.00 | 1.00 | 1.00 | - |
+| I10 | 10/20 | 0.1 | DES | 1094.8 | 1.4 | 1.00 | 1.00 | 1.00 | - |
+| I10 | 10/20 | 0.1 | Dinámico | 1094.8 | 1.4 | 1.00 | 1.00 | 1.00 | 0.0 |
+| I10 | 10/20 | 0.2 | MC | 1094.7 | 2.8 | 1.00 | 1.00 | 1.00 | - |
+| I10 | 10/20 | 0.2 | DES | 1094.7 | 2.8 | 1.00 | 1.00 | 1.00 | - |
+| I10 | 10/20 | 0.2 | Dinámico | 1094.7 | 2.8 | 1.00 | 1.00 | 1.00 | 0.0 |
+| I10 | 10/20 | 0.3 | MC | 1094.6 | 4.2 | 1.00 | 1.00 | 1.00 | - |
+| I10 | 10/20 | 0.3 | DES | 1094.6 | 4.2 | 1.00 | 1.00 | 1.00 | - |
+| I10 | 10/20 | 0.3 | Dinámico | 1094.6 | 4.2 | 1.00 | 1.00 | 1.00 | 0.0 |
 
-104 de 120 combinaciones completas están en la tabla de arriba.
+118 de 120 combinaciones completas están en la tabla de arriba.
 
-## Combinaciones pendientes
+## Combinaciones no completadas
 
-**16 de 120 combinaciones no están disponibles todavía.** El lote sigue corriendo en segundo plano al momento de generar este resumen (ver `resultados_paper/raw/batch.pid`); no se omiten en silencio, se listan explícitamente aquí con su estado exacto (detalle completo en `resultados_paper/run_manifest.json`):
+**2 de 120 combinaciones no están en la tabla.** No se omiten en silencio -- se listan aquí con su estado y evidencia exacta (detalle completo en `resultados_paper/run_manifest.json`):
 
-| Combinación | Instancia | CV | Método | Estado |
-|---|---|---|---|---|
-| dynamic_I09_cv20 | I09 | 0.2 | DynSimTSI-DES | en curso ahora mismo |
-| dynamic_I09_cv30 | I09 | 0.3 | DynSimTSI-DES | no iniciada aún |
-| des_I09_cv30 | I09 | 0.3 | SimTSI-DES | no iniciada aún |
-| mc_I09_cv30 | I09 | 0.3 | SimTSI-MC | no iniciada aún |
-| dynamic_I10_cv05 | I10 | 0.05 | DynSimTSI-DES | no iniciada aún |
-| des_I10_cv05 | I10 | 0.05 | SimTSI-DES | no iniciada aún |
-| mc_I10_cv05 | I10 | 0.05 | SimTSI-MC | no iniciada aún |
-| dynamic_I10_cv10 | I10 | 0.1 | DynSimTSI-DES | no iniciada aún |
-| des_I10_cv10 | I10 | 0.1 | SimTSI-DES | no iniciada aún |
-| mc_I10_cv10 | I10 | 0.1 | SimTSI-MC | no iniciada aún |
-| dynamic_I10_cv20 | I10 | 0.2 | DynSimTSI-DES | no iniciada aún |
-| des_I10_cv20 | I10 | 0.2 | SimTSI-DES | no iniciada aún |
-| mc_I10_cv20 | I10 | 0.2 | SimTSI-MC | no iniciada aún |
-| dynamic_I10_cv30 | I10 | 0.3 | DynSimTSI-DES | no iniciada aún |
-| des_I10_cv30 | I10 | 0.3 | SimTSI-DES | no iniciada aún |
-| mc_I10_cv30 | I10 | 0.3 | SimTSI-MC | no iniciada aún |
+| Combinación | Instancia | CV | Método | Estado | Evidencia |
+|---|---|---|---|---|---|
+| dynamic_I09_cv20 | I09 | 0.2 | DynSimTSI-DES | timeout | timeout a los 7201.4 s |
+| dynamic_I09_cv30 | I09 | 0.3 | DynSimTSI-DES | timeout | timeout a los 7201.3 s |
 
-- **1 en curso ahora mismo:** dynamic_I09_cv20.
-- **15 aún no iniciadas** por el lote (orden I01→I10): todas corresponden a I09 (resto de cv=0.30) e I10 completa.
-
-Todas corresponden a las instancias más grandes (I09-I10, 9-10 loaders / 18-20 jobs) y, en el caso de `DynSimTSI-DES`, a niveles de CV donde el disparador de reoptimización se activa con frecuencia, cada reoptimización ejecutando una búsqueda tabú completa anidada. Ver `docs/INFORME_FINAL.md` (sección "Estado final del lote", pendiente de completar) para el resultado definitivo cuando el lote termine.
+**2 no completadas por costo computacional** (timeout), no por un fallo del código -- ver `docs/DECISIONES.md` (Fase 6-7) para la evidencia de CPU real acumulada en cada intento y la justificación de no seguir subiendo el límite de tiempo indefinidamente.
