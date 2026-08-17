@@ -1033,3 +1033,4 @@
 {"method": "dynamic", "instance": "I10", "cv": 0.1, "quick": false, "tag": "dynamic_I10_cv10", "status": "ok", "elapsed_s": 2784.5695645000087}
 {"method": "mc", "instance": "I10", "cv": 0.2, "quick": false, "tag": "mc_I10_cv20", "status": "ok", "elapsed_s": 2294.6504391999915}
 {"method": "des", "instance": "I10", "cv": 0.2, "quick": false, "tag": "des_I10_cv20", "status": "ok", "elapsed_s": 2735.6736845000123}
+{"method": "dynamic", "instance": "I10", "cv": 0.2, "quick": false, "tag": "dynamic_I10_cv20", "status": "ok", "elapsed_s": 2780.9937764999922}
