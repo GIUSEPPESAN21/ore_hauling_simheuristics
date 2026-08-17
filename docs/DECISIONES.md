@@ -501,6 +501,40 @@ extrapolación optimista:
   y por qué, con esta medición como evidencia, en vez de perseguirlas indefinidamente — tal
   como exige el Paso 5 del encargo.
 
+### Pausa de la sesión (2026-08-17, 00:13) — estado para retomar
+
+**116/120 combinaciones con estado final** (114 archivos `.json` en `resultados_paper/raw/` +
+`dynamic_I09_cv20` y `dynamic_I09_cv30`, ya cerradas como `"timeout"` definitivo a los 4500 s,
+sin reintento pendiente en esta corrida). Faltan exactamente **4**:
+
+```
+dynamic_I10_cv20   (en curso ahora mismo, ~45 min de los 75 disponibles — no es un cuelgue)
+mc_I10_cv30
+des_I10_cv30
+dynamic_I10_cv30
+```
+
+El proceso del lote (PID en `resultados_paper/raw/batch.pid`, ver también el historial de
+PIDs en este documento — cada relanzamiento tras el bug de huérfanos usó un PID nuevo) **se
+deja corriendo en segundo plano, sin supervisión activa**, porque es un proceso Windows
+desacoplado (`Start-Process`) que no depende de esta conversación para seguir avanzando, y
+`resume=True` garantiza que no se pierde nada si se interrumpe (por apagado de la máquina o
+cualquier otro motivo): al día siguiente basta con volver a lanzar exactamente el mismo comando
+de la Fase 6 (`--workers 2 --timeout-s 4500 --outdir resultados_paper/raw`, ver arriba) y saltará
+automáticamente todo lo ya completado.
+
+**Para retomar la próxima sesión:**
+1. Verificar el estado real (no asumir): `Get-Process -Id <pid en batch.pid>`, contar `.json` en
+   `resultados_paper/raw/`, y leer las últimas líneas de `run_log.jsonl`.
+2. Si el proceso ya no está corriendo (por ejemplo, la máquina se apagó), relanzarlo con el
+   mismo comando — `resume=True` evita repetir trabajo.
+3. Cuando las 4 combinaciones restantes lleguen a su estado final (completas o con timeout
+   documentado, igual que `dynamic_I09_cv20/cv30`), regenerar `resultados_paper/run_manifest.json`
+   y `resultados_paper/RESUMEN_PARA_PAPER.md` (los generadores ya validan cada resultado antes de
+   incorporarlo — ver Fase 6, sección "Documentador") y completar la sección "Estado final del
+   lote" de `docs/INFORME_FINAL.md` (dejada con un marcador explícito para esto).
+4. Correr `tests/` una vez más antes de dar el trabajo por cerrado.
+
 ### Bug crítico encontrado y corregido: el timeout dejaba procesos huérfanos y se colgaba
 
 Al relanzar el batch de producción con `--timeout-s 4500 --workers 2`, se observó que el
