@@ -500,3 +500,57 @@ extrapolación optimista:
   documentan en `run_manifest.json` y en `docs/INFORME_FINAL.md` cuáles quedaron sin resultado
   y por qué, con esta medición como evidencia, en vez de perseguirlas indefinidamente — tal
   como exige el Paso 5 del encargo.
+
+### Bug crítico encontrado y corregido: el timeout dejaba procesos huérfanos y se colgaba
+
+Al relanzar el batch de producción con `--timeout-s 4500 --workers 2`, se observó que el
+reintento de `dynamic_I09_cv20` no producía ni un resultado NI una entrada `"timeout"` en
+`run_log.jsonl` incluso **50+ minutos después** de que el límite de 4500 s debía haberse
+cumplido — el proceso principal seguía "vivo" (según `tasklist`) pero sin avanzar.
+
+**Diagnóstico, confirmado con `Get-CimInstance Win32_Process`:** el proceso hijo directo
+(`--single-run`, creado por `_run_one_subprocess()`) SÍ había sido matado correctamente por
+`subprocess.run(..., timeout=4500)` al cumplirse el límite. Pero ese proceso hijo, con
+`--workers 2`, había creado su propio `multiprocessing.Pool` con 2 procesos worker — y esos
+worker (nietos del proceso principal de `run_batch()`) **NO fueron matados junto con su padre**:
+`Popen.kill()` en Windows solo termina el proceso directo, no su árbol completo. Uno de esos
+worker quedó huérfano, vivo, consumiendo CPU (>1h de tiempo de CPU acumulado en el momento del
+diagnóstico) — y, al parecer, sosteniendo abierto el extremo de escritura del pipe de
+stdout/stderr heredado del proceso ya muerto, lo que dejaba el `communicate()` interno de
+`subprocess.run()` esperando EOF **para siempre**, bloqueando `run_batch()` sin que ningún
+timeout lo rescatara.
+
+**Esto es un bug introducido por el propio cambio de paralelización de esta fase**: antes de
+agregar `multiprocessing.Pool` dentro del subproceso `--single-run`, ese subproceso era
+puramente de un solo proceso (sin hijos propios), así que `proc.kill()` sí bastaba para
+terminarlo por completo. Al agregar un pool de procesos persistente, el mecanismo de timeout
+que ya existía (Fase 3) dejó de ser seguro.
+
+**Corrección** (`run_all.py`, `_run_one_subprocess()`): se reemplazó `subprocess.run(...,
+timeout=...)` por `subprocess.Popen(...)` + `proc.communicate(timeout=...)` manejado
+explícitamente, y se agregó `_kill_process_tree(pid)`, que en Windows usa
+`taskkill /F /T /PID <pid>` (mata el proceso Y todo su árbol de descendientes) en vez de
+`proc.kill()` (que solo mata el proceso directo). En POSIX se usa `os.killpg` sobre un grupo de
+procesos propio (`start_new_session=True` al lanzar el subproceso).
+
+**Verificación de la corrección:** se forzó un timeout artificialmente corto
+(`--timeout-s 8` sobre `des_I06_cv10`, que normalmente tarda ~650 s) con `--workers 2`. Resultado:
+el proceso principal retornó en **9.4 s** (no se colgó), la combinación quedó registrada
+correctamente como `"status": "timeout"` en `run_log.jsonl`, y **no quedó ningún proceso
+`python.exe` huérfano** después (verificado con `tasklist`). La suite de `tests/` (6 pruebas)
+sigue pasando sin cambios.
+
+**Consecuencia práctica para esta sesión:** el batch que llevaba ~90 minutos completamente
+atascado (sin avanzar más allá de `dynamic_I09_cv20`) se detuvo manualmente
+(`taskkill /F /T` sobre el proceso principal y el worker huérfano) y se relanzó desde cero con
+el código corregido. Gracias a `resume=True`, las 104 combinaciones ya completas no se
+repitieron.
+
+### Re-chequeo de RAM antes de subir `--workers` (sesión de retomado, misma tarde)
+
+Antes de considerar subir de 2 a 3 workers, se midió la RAM libre real con `psutil` (misma
+metodología de `docs/PERFIL_MAQUINA.md`), con el batch ya corriendo: **0.65 GB disponibles de
+7.87 GB totales (91.7% en uso).** Esto NO es sustancialmente mayor que el rango ya medido
+(0.55-0.86 GB en mediciones anteriores) — sigue siendo la misma máquina con la misma presión de
+memoria. **Decisión: se mantiene `--workers 2`**, sin probar 3, siguiendo el criterio ya
+establecido de no subir el paralelismo "a ver qué pasa" sin evidencia de margen real.

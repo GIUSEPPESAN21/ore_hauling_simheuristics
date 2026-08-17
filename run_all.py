@@ -1,5 +1,5 @@
 from __future__ import annotations
-import argparse, json, csv, subprocess, sys, time, traceback
+import argparse, json, csv, os, subprocess, sys, time, traceback
 from pathlib import Path
 from dataclasses import replace
 
@@ -150,6 +150,26 @@ def _append_log(log_path: Path, entry: dict) -> None:
         f.write(json.dumps(entry, default=to_serializable) + '\n')
 
 
+def _kill_process_tree(pid: int) -> None:
+    """Kill pid and all of its descendants. Needed because with --workers>1 the
+    --single-run child creates its own multiprocessing.Pool worker processes
+    (grandchildren of run_batch()'s process). Popen.kill()/proc.kill() only
+    terminates the direct child; on Windows this leaves live orphaned pool
+    workers behind, which can keep the killed child's stdout/stderr pipe
+    handles open and make subprocess communicate() hang forever even after
+    the child is dead (observed in production: a timed-out dynamic_I09_cv20
+    stalled run_batch() for 50+ minutes past its 4500s timeout — see
+    docs/DECISIONES.md, Fase 6)."""
+    if os.name == 'nt':
+        subprocess.run(['taskkill', '/F', '/T', '/PID', str(pid)], capture_output=True)
+    else:
+        import signal
+        try:
+            os.killpg(os.getpgid(pid), signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+
+
 def _run_one_subprocess(method, iid, cv, quick, loader_release_rule, outdir: Path, timeout_s: float,
                          short_reps=None, workers=1):
     """Run one combination in a child process so a hang (infinite/very long TSI
@@ -164,12 +184,20 @@ def _run_one_subprocess(method, iid, cv, quick, loader_release_rule, outdir: Pat
         cmd.append('--quick')
     if short_reps is not None:
         cmd += ['--short-reps', str(short_reps)]
+    popen_kwargs = {} if os.name == 'nt' else {'start_new_session': True}
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                            **popen_kwargs)
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_s)
+        stdout, stderr = proc.communicate(timeout=timeout_s)
     except subprocess.TimeoutExpired:
+        _kill_process_tree(proc.pid)
+        try:
+            proc.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            pass
         return False, None, 'TIMEOUT'
     if proc.returncode != 0:
-        return False, None, proc.stderr
+        return False, None, stderr
     tag = scenario_tag(method, iid, cv, quick)
     result_path = outdir/f'{tag}.json'
     if not result_path.exists():

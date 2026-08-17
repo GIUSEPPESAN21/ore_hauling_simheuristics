@@ -1,0 +1,1249 @@
+{
+  "generated_at_local": "2026-08-16T14:20:21.305336-05:00",
+  "generated_at_utc": "2026-08-16T19:20:21.306338+00:00",
+  "status_note": "Snapshot PROVISIONAL: el proceso del lote (PID en resultados_paper/raw/batch.pid) seguia en ejecucion en segundo plano al momento de generar este manifiesto. 104/120 combinaciones estan completas y validadas (ver validacion en docs/INFORME_FINAL.md); las 16 restantes se marcan explicitamente como 'pendiente_en_curso' (1, la que el lote esta ejecutando ahora mismo) o 'pendiente_no_iniciada' (15, aun no alcanzadas por el orden I01->I10 del lote). Este archivo debe regenerarse cuando el lote llegue a su estado final.",
+  "batch_pid_at_generation_time": "18528",
+  "machine_profile": {
+    "cpu": "AMD Ryzen 5 7520U with Radeon Graphics",
+    "physical_cores": 4,
+    "logical_cores": 8,
+    "ram_total_bytes": 7865888768,
+    "ram_total_gib_1024": 7.33,
+    "ram_total_gb_decimal_1000": 7.87,
+    "ram_free_measurements_gb": [
+      {
+        "value_gb": 0.55,
+        "when": "2026-08-14 (perfilado inicial, ver docs/PERFIL_MAQUINA.md)",
+        "source": "docs/PERFIL_MAQUINA.md"
+      },
+      {
+        "value_gb": "0.55-0.86 (rango)",
+        "when": "Mediciones previas citadas en docs/DECISIONES.md Fase 6 antes del re-chequeo del 2026-08-16 (no hay una segunda medicion puntual documentada por separado en docs/PERFIL_MAQUINA.md; el 0.86 GB aparece como cota superior del rango observado, referenciado tambien como \"~600-860 MB\" en la seccion de implementacion de la Fase 6)",
+        "source": "docs/DECISIONES.md, Fase 6"
+      },
+      {
+        "value_gb": 0.65,
+        "when": "2026-08-16 (re-chequeo con psutil, misma metodologia, con el lote ya corriendo, antes de decidir si subir workers de 2 a 3)",
+        "source": "docs/DECISIONES.md, Fase 6, seccion \"Re-chequeo de RAM antes de subir --workers\""
+      }
+    ],
+    "note": "Portatil de gama baja/media, RAM muy ajustada en las tres mediciones (0.55-0.86 GB libres de ~7.3-7.9 GB totales, <=~12% libre). Es la base de la decision de mantener workers=2. Ver docs/PERFIL_MAQUINA.md."
+  },
+  "configuration": {
+    "short_reps": 5,
+    "short_reps_default_in_config_py": 20,
+    "short_reps_note": "SimBudget.short_reps sigue siendo 20 por defecto en config.py (sin tocar); se pasa --short-reps 5 explicitamente en cada invocacion del lote (Fase 4), justificado por un analisis de estabilidad en I02/I03 que mostro que el TSI converge a la MISMA solucion final (mean_cmax_min identico a 4+ decimales) con short_reps en {3,5,10,20}; solo el search_fitness interno (que nunca se reporta) varia <0.05%.",
+    "final_reps": 500,
+    "loader_release_rule": "load_only",
+    "loader_release_rule_note": "Fase 2a: se unifico mc.py para liberar el loader al terminar de cargar ('load_only'), igual que des.py, en vez de al terminar el ciclo completo del camion ('full_cycle', preservado como opcion no usada en el lote). Sin este cambio mc.py y des.py daban cmax distintos (54.0 vs 35.0 min) en un caso de prueba determinista con congestion.",
+    "timeout_s": 4500,
+    "timeout_s_history": [
+      {
+        "value_s": 900,
+        "phase": "Fase 4",
+        "reason": "Valor de partida (15 min) para el plan de ejecucion del lote de 120 combinaciones, antes de tener mediciones reales en instancias grandes; buscaba acotar el tiempo por combinacion sin bloquear el lote."
+      },
+      {
+        "value_s": 3600,
+        "phase": "Fase 5",
+        "reason": "Se subio a 1 hora tras medir I08 (SimTSI-DES) en 1792.8 s real sin limite: 900 s era claramente insuficiente (ya habia matado corridas de I07). 3600 s da ~2x de margen sobre I08 y algo de holgura para mc/dynamic y CVs mas lentos."
+      },
+      {
+        "value_s": 4500,
+        "phase": "Fase 6",
+        "reason": "Tras paralelizar (workers=2) y medir que dynamic_I09_cv20 seguia sin terminar incluso con 5400 s (90 min) de limite, se fijo un punto intermedio de 75 min: mayor que 3600 s (da margen a des_I10, extrapolado en ~4135 s secuenciales a partir del factor de crecimiento real I08->I09), pero sin subir a 5400 s+ porque ya hay evidencia directa de que eso tampoco alcanza para las combinaciones dynamic mas costosas de I09/I10 y perseguirlas indefinidamente no se justifica."
+      }
+    ],
+    "workers": 2,
+    "workers_note": "Se probo (perfilado, no en produccion) subir a mas de 2 workers, pero se descarto: RAM libre re-chequeada con psutil el 2026-08-16, con el lote ya corriendo, dio 0.65 GB libres de 7.87 GB totales (91.7% en uso) — no sustancialmente distinto del rango 0.55-0.86 GB ya medido antes. Con esa presion de memoria, sumar un tercer proceso worker (cada uno con su propia copia de la instancia y del pool de multiprocessing) arriesga swapping en esta maquina de 4 nucleos fisicos / ~7.3-7.9 GB RAM. Se mantiene workers=2, mismo criterio ya usado de no subir paralelismo sin evidencia de margen real.",
+    "tsi_params": {
+      "tenure": 10,
+      "max_iters": 1000,
+      "stag_limit": 25,
+      "perturb_moves": 3
+    },
+    "seeds": {
+      "tsi_seed": 12345,
+      "sim_base_seed": 500000,
+      "rollout_base_seed": 900000
+    }
+  },
+  "totals": {
+    "expected": 120,
+    "ok": 104,
+    "timeout": 0,
+    "failed": 0,
+    "pendiente_en_curso": 1,
+    "pendiente_no_iniciada": 15
+  },
+  "combinations": [
+    {
+      "tag": "mc_I01_cv05",
+      "method": "SimTSI-MC",
+      "instance": "I01",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 0.16557390009984374,
+      "mean_cmax_min": 686.064484547715,
+      "replications": 500
+    },
+    {
+      "tag": "des_I01_cv05",
+      "method": "SimTSI-DES",
+      "instance": "I01",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 0.23308670008555055,
+      "mean_cmax_min": 686.064484547715,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I01_cv05",
+      "method": "DynSimTSI-DES",
+      "instance": "I01",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 0.4429981999564916,
+      "mean_cmax_min": 686.064484547715,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I01_cv10",
+      "method": "SimTSI-MC",
+      "instance": "I01",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 0.33515379996970296,
+      "mean_cmax_min": 686.0280257671607,
+      "replications": 500
+    },
+    {
+      "tag": "des_I01_cv10",
+      "method": "SimTSI-DES",
+      "instance": "I01",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 0.20931890001520514,
+      "mean_cmax_min": 686.0280257671607,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I01_cv10",
+      "method": "DynSimTSI-DES",
+      "instance": "I01",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 0.41031399997882545,
+      "mean_cmax_min": 686.0280257671607,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I01_cv20",
+      "method": "SimTSI-MC",
+      "instance": "I01",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 0.17584670009091496,
+      "mean_cmax_min": 685.9620924385795,
+      "replications": 500
+    },
+    {
+      "tag": "des_I01_cv20",
+      "method": "SimTSI-DES",
+      "instance": "I01",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 0.21050829999148846,
+      "mean_cmax_min": 685.9620924385795,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I01_cv20",
+      "method": "DynSimTSI-DES",
+      "instance": "I01",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 0.4118217001669109,
+      "mean_cmax_min": 685.9620924385795,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I01_cv30",
+      "method": "SimTSI-MC",
+      "instance": "I01",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 0.24515590001828969,
+      "mean_cmax_min": 685.9062768122199,
+      "replications": 500
+    },
+    {
+      "tag": "des_I01_cv30",
+      "method": "SimTSI-DES",
+      "instance": "I01",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 0.48971210001036525,
+      "mean_cmax_min": 685.9062768122199,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I01_cv30",
+      "method": "DynSimTSI-DES",
+      "instance": "I01",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 0.7735193998087198,
+      "mean_cmax_min": 685.9062768122199,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I02_cv05",
+      "method": "SimTSI-MC",
+      "instance": "I02",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 0.7289448000956327,
+      "mean_cmax_min": 831.9370540097556,
+      "replications": 500
+    },
+    {
+      "tag": "des_I02_cv05",
+      "method": "SimTSI-DES",
+      "instance": "I02",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 0.7914110999554396,
+      "mean_cmax_min": 831.9370540097556,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I02_cv05",
+      "method": "DynSimTSI-DES",
+      "instance": "I02",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 1.1955196000635624,
+      "mean_cmax_min": 831.9370540097556,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I02_cv10",
+      "method": "SimTSI-MC",
+      "instance": "I02",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 0.6310437000356615,
+      "mean_cmax_min": 831.9526623803654,
+      "replications": 500
+    },
+    {
+      "tag": "des_I02_cv10",
+      "method": "SimTSI-DES",
+      "instance": "I02",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 1.108406700193882,
+      "mean_cmax_min": 831.9526623803654,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I02_cv10",
+      "method": "DynSimTSI-DES",
+      "instance": "I02",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 1.231011499883607,
+      "mean_cmax_min": 831.9526623803654,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I02_cv20",
+      "method": "SimTSI-MC",
+      "instance": "I02",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 0.678485699929297,
+      "mean_cmax_min": 831.9823639323884,
+      "replications": 500
+    },
+    {
+      "tag": "des_I02_cv20",
+      "method": "SimTSI-DES",
+      "instance": "I02",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 0.8147314998786896,
+      "mean_cmax_min": 831.9823639323884,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I02_cv20",
+      "method": "DynSimTSI-DES",
+      "instance": "I02",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 1.1355876000598073,
+      "mean_cmax_min": 831.9823639323884,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I02_cv30",
+      "method": "SimTSI-MC",
+      "instance": "I02",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 0.5673843000549823,
+      "mean_cmax_min": 832.0098611905582,
+      "replications": 500
+    },
+    {
+      "tag": "des_I02_cv30",
+      "method": "SimTSI-DES",
+      "instance": "I02",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 1.1611224999651313,
+      "mean_cmax_min": 832.0098611905582,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I02_cv30",
+      "method": "DynSimTSI-DES",
+      "instance": "I02",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 1.150786800077185,
+      "mean_cmax_min": 832.0098611905582,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I03_cv05",
+      "method": "SimTSI-MC",
+      "instance": "I03",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 29.58680749987252,
+      "mean_cmax_min": 836.7950304944779,
+      "replications": 500
+    },
+    {
+      "tag": "des_I03_cv05",
+      "method": "SimTSI-DES",
+      "instance": "I03",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 39.29902580007911,
+      "mean_cmax_min": 836.7950304944779,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I03_cv05",
+      "method": "DynSimTSI-DES",
+      "instance": "I03",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 41.00991049990989,
+      "mean_cmax_min": 836.7950304944779,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I03_cv10",
+      "method": "SimTSI-MC",
+      "instance": "I03",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 32.110768999904394,
+      "mean_cmax_min": 836.8054435404316,
+      "replications": 500
+    },
+    {
+      "tag": "des_I03_cv10",
+      "method": "SimTSI-DES",
+      "instance": "I03",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 41.28345820005052,
+      "mean_cmax_min": 836.8054435404316,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I03_cv10",
+      "method": "DynSimTSI-DES",
+      "instance": "I03",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 40.69788260012865,
+      "mean_cmax_min": 836.8054435404316,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I03_cv20",
+      "method": "SimTSI-MC",
+      "instance": "I03",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 30.49409139994532,
+      "mean_cmax_min": 836.8189838285958,
+      "replications": 500
+    },
+    {
+      "tag": "des_I03_cv20",
+      "method": "SimTSI-DES",
+      "instance": "I03",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 36.156439299928024,
+      "mean_cmax_min": 836.8189838285958,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I03_cv20",
+      "method": "DynSimTSI-DES",
+      "instance": "I03",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 36.850217500003055,
+      "mean_cmax_min": 836.8189838285958,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I03_cv30",
+      "method": "SimTSI-MC",
+      "instance": "I03",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 29.07566439989023,
+      "mean_cmax_min": 836.8241711585941,
+      "replications": 500
+    },
+    {
+      "tag": "des_I03_cv30",
+      "method": "SimTSI-DES",
+      "instance": "I03",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 34.75951599981636,
+      "mean_cmax_min": 836.8241711585941,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I03_cv30",
+      "method": "DynSimTSI-DES",
+      "instance": "I03",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 35.00075070001185,
+      "mean_cmax_min": 836.8241711585941,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I04_cv05",
+      "method": "SimTSI-MC",
+      "instance": "I04",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 184.8590243998915,
+      "mean_cmax_min": 928.5261657259659,
+      "replications": 500
+    },
+    {
+      "tag": "des_I04_cv05",
+      "method": "SimTSI-DES",
+      "instance": "I04",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 221.32534039998427,
+      "mean_cmax_min": 928.5261657259659,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I04_cv05",
+      "method": "DynSimTSI-DES",
+      "instance": "I04",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 228.57915830006823,
+      "mean_cmax_min": 928.5261657259659,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I04_cv10",
+      "method": "SimTSI-MC",
+      "instance": "I04",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 164.14960690005682,
+      "mean_cmax_min": 928.49330172342,
+      "replications": 500
+    },
+    {
+      "tag": "des_I04_cv10",
+      "method": "SimTSI-DES",
+      "instance": "I04",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 190.57146809995174,
+      "mean_cmax_min": 928.49330172342,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I04_cv10",
+      "method": "DynSimTSI-DES",
+      "instance": "I04",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 162.60080139990896,
+      "mean_cmax_min": 928.49330172342,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I04_cv20",
+      "method": "SimTSI-MC",
+      "instance": "I04",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 135.76210859999992,
+      "mean_cmax_min": 928.4308419543663,
+      "replications": 500
+    },
+    {
+      "tag": "des_I04_cv20",
+      "method": "SimTSI-DES",
+      "instance": "I04",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 161.68630869989283,
+      "mean_cmax_min": 928.4308419543663,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I04_cv20",
+      "method": "DynSimTSI-DES",
+      "instance": "I04",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 153.33185860002413,
+      "mean_cmax_min": 928.4308419543663,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I04_cv30",
+      "method": "SimTSI-MC",
+      "instance": "I04",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 133.7109886999242,
+      "mean_cmax_min": 928.3731337520242,
+      "replications": 500
+    },
+    {
+      "tag": "des_I04_cv30",
+      "method": "SimTSI-DES",
+      "instance": "I04",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 163.6716000000015,
+      "mean_cmax_min": 928.3731337520242,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I04_cv30",
+      "method": "DynSimTSI-DES",
+      "instance": "I04",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 198.8443969001528,
+      "mean_cmax_min": 928.3731337520242,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I05_cv05",
+      "method": "SimTSI-MC",
+      "instance": "I05",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 241.29429330001585,
+      "mean_cmax_min": 1079.3773807579332,
+      "replications": 500
+    },
+    {
+      "tag": "des_I05_cv05",
+      "method": "SimTSI-DES",
+      "instance": "I05",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 292.6385324001312,
+      "mean_cmax_min": 1079.3773807579332,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I05_cv05",
+      "method": "DynSimTSI-DES",
+      "instance": "I05",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 291.41245570010506,
+      "mean_cmax_min": 1079.3773807579332,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I05_cv10",
+      "method": "SimTSI-MC",
+      "instance": "I05",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 241.25519150006585,
+      "mean_cmax_min": 1079.398741083064,
+      "replications": 500
+    },
+    {
+      "tag": "des_I05_cv10",
+      "method": "SimTSI-DES",
+      "instance": "I05",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 299.5970579001587,
+      "mean_cmax_min": 1079.398741083064,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I05_cv10",
+      "method": "DynSimTSI-DES",
+      "instance": "I05",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 307.0567323002033,
+      "mean_cmax_min": 1079.398741083064,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I05_cv20",
+      "method": "SimTSI-MC",
+      "instance": "I05",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 239.98598559992388,
+      "mean_cmax_min": 1079.453978501307,
+      "replications": 500
+    },
+    {
+      "tag": "des_I05_cv20",
+      "method": "SimTSI-DES",
+      "instance": "I05",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 304.2475845001172,
+      "mean_cmax_min": 1079.453978501307,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I05_cv20",
+      "method": "DynSimTSI-DES",
+      "instance": "I05",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 296.9468252998777,
+      "mean_cmax_min": 1079.453978501307,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I05_cv30",
+      "method": "SimTSI-MC",
+      "instance": "I05",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 240.34230479993857,
+      "mean_cmax_min": 1079.5260796809691,
+      "replications": 500
+    },
+    {
+      "tag": "des_I05_cv30",
+      "method": "SimTSI-DES",
+      "instance": "I05",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 306.8682442998979,
+      "mean_cmax_min": 1079.5260796809691,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I05_cv30",
+      "method": "DynSimTSI-DES",
+      "instance": "I05",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 307.74844370014034,
+      "mean_cmax_min": 1079.5260796809691,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I06_cv05",
+      "method": "SimTSI-MC",
+      "instance": "I06",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 688.2803244001698,
+      "mean_cmax_min": 956.5398590167716,
+      "replications": 500
+    },
+    {
+      "tag": "des_I06_cv05",
+      "method": "SimTSI-DES",
+      "instance": "I06",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 766.392133400077,
+      "mean_cmax_min": 956.5398590167716,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I06_cv05",
+      "method": "DynSimTSI-DES",
+      "instance": "I06",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 630.3340980999637,
+      "mean_cmax_min": 956.5398590167716,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I06_cv10",
+      "method": "SimTSI-MC",
+      "instance": "I06",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 480.2606607999187,
+      "mean_cmax_min": 956.6330636340855,
+      "replications": 500
+    },
+    {
+      "tag": "des_I06_cv10",
+      "method": "SimTSI-DES",
+      "instance": "I06",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 652.9200213998556,
+      "mean_cmax_min": 956.6330636340855,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I06_cv10",
+      "method": "DynSimTSI-DES",
+      "instance": "I06",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 649.9412665998098,
+      "mean_cmax_min": 956.6330636340855,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I06_cv20",
+      "method": "SimTSI-MC",
+      "instance": "I06",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 488.3157573998906,
+      "mean_cmax_min": 956.8095569085408,
+      "replications": 500
+    },
+    {
+      "tag": "des_I06_cv20",
+      "method": "SimTSI-DES",
+      "instance": "I06",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 599.4892104000319,
+      "mean_cmax_min": 956.8095569085408,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I06_cv20",
+      "method": "DynSimTSI-DES",
+      "instance": "I06",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 605.6847918999847,
+      "mean_cmax_min": 956.8095569085408,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I06_cv30",
+      "method": "SimTSI-MC",
+      "instance": "I06",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 492.76595430006273,
+      "mean_cmax_min": 956.9701441211836,
+      "replications": 500
+    },
+    {
+      "tag": "des_I06_cv30",
+      "method": "SimTSI-DES",
+      "instance": "I06",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 607.4921445001382,
+      "mean_cmax_min": 956.9701441211836,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I06_cv30",
+      "method": "DynSimTSI-DES",
+      "instance": "I06",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 713.720920199994,
+      "mean_cmax_min": 956.9701441211836,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I07_cv05",
+      "method": "SimTSI-MC",
+      "instance": "I07",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 904.4860514998436,
+      "mean_cmax_min": 991.5025241760244,
+      "replications": 500
+    },
+    {
+      "tag": "des_I07_cv05",
+      "method": "SimTSI-DES",
+      "instance": "I07",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 1022.0299455998465,
+      "mean_cmax_min": 991.5025241760244,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I07_cv05",
+      "method": "DynSimTSI-DES",
+      "instance": "I07",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 1003.6781382999998,
+      "mean_cmax_min": 991.5025241760244,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I07_cv10",
+      "method": "SimTSI-MC",
+      "instance": "I07",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 824.1468943999989,
+      "mean_cmax_min": 991.539024587428,
+      "replications": 500
+    },
+    {
+      "tag": "des_I07_cv10",
+      "method": "SimTSI-DES",
+      "instance": "I07",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 1051.870679900001,
+      "mean_cmax_min": 991.539024587428,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I07_cv10",
+      "method": "DynSimTSI-DES",
+      "instance": "I07",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 1029.6202262999996,
+      "mean_cmax_min": 991.539024587428,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I07_cv20",
+      "method": "SimTSI-MC",
+      "instance": "I07",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 839.7048289999984,
+      "mean_cmax_min": 991.5801075142247,
+      "replications": 500
+    },
+    {
+      "tag": "des_I07_cv20",
+      "method": "SimTSI-DES",
+      "instance": "I07",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 1051.5894307000017,
+      "mean_cmax_min": 991.5801075142247,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I07_cv20",
+      "method": "DynSimTSI-DES",
+      "instance": "I07",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 1041.8049661000005,
+      "mean_cmax_min": 991.5801075142247,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I07_cv30",
+      "method": "SimTSI-MC",
+      "instance": "I07",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 843.2603397999992,
+      "mean_cmax_min": 991.6264885016399,
+      "replications": 500
+    },
+    {
+      "tag": "des_I07_cv30",
+      "method": "SimTSI-DES",
+      "instance": "I07",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 1114.8371447000027,
+      "mean_cmax_min": 991.6264885016399,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I07_cv30",
+      "method": "DynSimTSI-DES",
+      "instance": "I07",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 1168.7969042000004,
+      "mean_cmax_min": 991.6264885016399,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I08_cv05",
+      "method": "SimTSI-MC",
+      "instance": "I08",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 1380.6548124,
+      "mean_cmax_min": 1086.9210930741538,
+      "replications": 500
+    },
+    {
+      "tag": "des_I08_cv05",
+      "method": "SimTSI-DES",
+      "instance": "I08",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 1630.3623074000025,
+      "mean_cmax_min": 1087.1291758881307,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I08_cv05",
+      "method": "DynSimTSI-DES",
+      "instance": "I08",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 1613.8509221999993,
+      "mean_cmax_min": 1087.1291758881307,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I08_cv10",
+      "method": "SimTSI-MC",
+      "instance": "I08",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 1255.196512300001,
+      "mean_cmax_min": 1086.8572856811516,
+      "replications": 500
+    },
+    {
+      "tag": "des_I08_cv10",
+      "method": "SimTSI-DES",
+      "instance": "I08",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 1792.7918740999994,
+      "mean_cmax_min": 1087.2468225463851,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I08_cv10",
+      "method": "DynSimTSI-DES",
+      "instance": "I08",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 1654.2332466000007,
+      "mean_cmax_min": 1087.2468225463851,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I08_cv20",
+      "method": "SimTSI-MC",
+      "instance": "I08",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 1462.1717583999998,
+      "mean_cmax_min": 1087.1094144288622,
+      "replications": 500
+    },
+    {
+      "tag": "des_I08_cv20",
+      "method": "SimTSI-DES",
+      "instance": "I08",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 1681.9429199000006,
+      "mean_cmax_min": 1087.4130596815755,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I08_cv20",
+      "method": "DynSimTSI-DES",
+      "instance": "I08",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 1840.0182792999985,
+      "mean_cmax_min": 1087.4130596815755,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I08_cv30",
+      "method": "SimTSI-MC",
+      "instance": "I08",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 1488.5481469000006,
+      "mean_cmax_min": 1087.5896744569584,
+      "replications": 500
+    },
+    {
+      "tag": "des_I08_cv30",
+      "method": "SimTSI-DES",
+      "instance": "I08",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 1835.1341211000035,
+      "mean_cmax_min": 1087.7305884608472,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I08_cv30",
+      "method": "DynSimTSI-DES",
+      "instance": "I08",
+      "cv": 0.3,
+      "status": "ok",
+      "cpu_s": 1796.9410409999982,
+      "mean_cmax_min": 1087.7305884608472,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I09_cv05",
+      "method": "SimTSI-MC",
+      "instance": "I09",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 2127.820512600003,
+      "mean_cmax_min": 1031.071174478439,
+      "replications": 500
+    },
+    {
+      "tag": "des_I09_cv05",
+      "method": "SimTSI-DES",
+      "instance": "I09",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 2785.701781699994,
+      "mean_cmax_min": 1031.071174478439,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I09_cv05",
+      "method": "DynSimTSI-DES",
+      "instance": "I09",
+      "cv": 0.05,
+      "status": "ok",
+      "cpu_s": 2742.4848954000045,
+      "mean_cmax_min": 1031.071174478439,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I09_cv10",
+      "method": "SimTSI-MC",
+      "instance": "I09",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 2270.717585899998,
+      "mean_cmax_min": 1031.1238188876353,
+      "replications": 500
+    },
+    {
+      "tag": "des_I09_cv10",
+      "method": "SimTSI-DES",
+      "instance": "I09",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 2913.631253200001,
+      "mean_cmax_min": 1031.1238188876353,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I09_cv10",
+      "method": "DynSimTSI-DES",
+      "instance": "I09",
+      "cv": 0.1,
+      "status": "ok",
+      "cpu_s": 3019.0288790999984,
+      "mean_cmax_min": 1031.1238188876353,
+      "replications": 500
+    },
+    {
+      "tag": "mc_I09_cv20",
+      "method": "SimTSI-MC",
+      "instance": "I09",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 2216.8820118000003,
+      "mean_cmax_min": 1031.2284374900164,
+      "replications": 500
+    },
+    {
+      "tag": "des_I09_cv20",
+      "method": "SimTSI-DES",
+      "instance": "I09",
+      "cv": 0.2,
+      "status": "ok",
+      "cpu_s": 2720.0821834000017,
+      "mean_cmax_min": 1031.2284374900164,
+      "replications": 500
+    },
+    {
+      "tag": "dynamic_I09_cv20",
+      "method": "DynSimTSI-DES",
+      "instance": "I09",
+      "cv": 0.2,
+      "status": "pendiente_en_curso",
+      "note": "El proceso del lote (ver batch.pid) esta reintentando esta combinacion en este momento, con --timeout-s 4500 y el fix del bug de procesos huerfanos (Fase 6). Intentos previos documentados: 1 timeout(s) registrados en run_log.jsonl (ultimo a los 3601.1 s, limite vigente en ese momento) mas un intento adicional durante la Fase 6 que quedo colgado >50 min por el bug de procesos huerfanos (no llego a registrarse como timeout limpio; se mato manualmente, ver docs/DECISIONES.md)."
+    },
+    {
+      "tag": "mc_I09_cv30",
+      "method": "SimTSI-MC",
+      "instance": "I09",
+      "cv": 0.3,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "des_I09_cv30",
+      "method": "SimTSI-DES",
+      "instance": "I09",
+      "cv": 0.3,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "dynamic_I09_cv30",
+      "method": "DynSimTSI-DES",
+      "instance": "I09",
+      "cv": 0.3,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "mc_I10_cv05",
+      "method": "SimTSI-MC",
+      "instance": "I10",
+      "cv": 0.05,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "des_I10_cv05",
+      "method": "SimTSI-DES",
+      "instance": "I10",
+      "cv": 0.05,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "dynamic_I10_cv05",
+      "method": "DynSimTSI-DES",
+      "instance": "I10",
+      "cv": 0.05,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "mc_I10_cv10",
+      "method": "SimTSI-MC",
+      "instance": "I10",
+      "cv": 0.1,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "des_I10_cv10",
+      "method": "SimTSI-DES",
+      "instance": "I10",
+      "cv": 0.1,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "dynamic_I10_cv10",
+      "method": "DynSimTSI-DES",
+      "instance": "I10",
+      "cv": 0.1,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "mc_I10_cv20",
+      "method": "SimTSI-MC",
+      "instance": "I10",
+      "cv": 0.2,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "des_I10_cv20",
+      "method": "SimTSI-DES",
+      "instance": "I10",
+      "cv": 0.2,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "dynamic_I10_cv20",
+      "method": "DynSimTSI-DES",
+      "instance": "I10",
+      "cv": 0.2,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "mc_I10_cv30",
+      "method": "SimTSI-MC",
+      "instance": "I10",
+      "cv": 0.3,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "des_I10_cv30",
+      "method": "SimTSI-DES",
+      "instance": "I10",
+      "cv": 0.3,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    },
+    {
+      "tag": "dynamic_I10_cv30",
+      "method": "DynSimTSI-DES",
+      "instance": "I10",
+      "cv": 0.3,
+      "status": "pendiente_no_iniciada",
+      "note": "El lote (orden instancia->cv->metodo, I01->I10) aun no ha llegado a esta combinacion."
+    }
+  ]
+}
