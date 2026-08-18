@@ -8,8 +8,12 @@
   "prob_pad_target": 1.0,
   "mean_plant_fine_tons": 865.975,
   "mean_pad_fine_tons": 235.95,
+  "mean_truck_wait_min": 0.0,
+  "mean_plant_dump_utilization": 0.002897062118819703,
+  "mean_pad_dump_utilization": 0.0028883837268365653,
   "replications": 500,
   "loader_release_rule": "load_only",
+  "dest_contention_rule": "queued",
   "method": "SimTSI-MC",
   "instance": "I01",
   "cv": 0.3,
@@ -21,7 +25,7 @@
   ],
   "search_fitness": 685.0359904780711,
   "tsi_evaluations": 2,
-  "cpu_s": 0.24515590001828969,
+  "cpu_s": 0.8100436999811791,
   "tsi_seed": 12345,
   "simulation_seed": 500000
 }

@@ -57,7 +57,7 @@ def write_summary(new_rows: list[dict], outdir: Path) -> None:
 
 
 def run(method, iid, cv, quick=False, loader_release_rule='load_only', short_reps=None,
-        workers=1):
+        workers=1, dest_contention_rule='queued'):
     inst=load_instance(DATA/f'{iid}.json')
     tsi=TSIParams()
     budget=SimBudget()
@@ -74,7 +74,8 @@ def run(method, iid, cv, quick=False, loader_release_rule='load_only', short_rep
         # unchanged across short_reps in {20,10,5,3} on I02/I03.
         budget=replace(budget,short_reps=short_reps)
     try:
-        if method=='mc': return run_simtsi_mc(inst,cv,tsi,budget,loader_release_rule=loader_release_rule,workers=workers)
+        if method=='mc': return run_simtsi_mc(inst,cv,tsi,budget,loader_release_rule=loader_release_rule,
+                                              workers=workers,dest_contention_rule=dest_contention_rule)
         if method=='des': return run_simtsi_des(inst,cv,tsi,budget,workers=workers)
         if method=='dynamic': return run_dynsimtsi_des(inst,cv,tsi,budget,dyn,workers=workers)
         raise ValueError(method)
@@ -83,10 +84,10 @@ def run(method, iid, cv, quick=False, loader_release_rule='load_only', short_rep
 
 
 def run_one(method, iid, cv, quick, loader_release_rule, outdir: Path, short_reps=None,
-           workers=1) -> dict:
+           workers=1, dest_contention_rule='queued') -> dict:
     """Run exactly one instance+method+cv combination in-process, write its JSON
     result into outdir, and return the scalar summary row. Raises on failure."""
-    res = run(method, iid, cv, quick, loader_release_rule, short_reps, workers)
+    res = run(method, iid, cv, quick, loader_release_rule, short_reps, workers, dest_contention_rule)
     tag = scenario_tag(method, iid, cv, quick)
     (outdir/f'{tag}.json').write_text(json.dumps(res, indent=2, default=to_serializable), encoding='utf-8')
     return {k: v for k, v in res.items() if not isinstance(v, (list, dict))}
@@ -94,7 +95,7 @@ def run_one(method, iid, cv, quick, loader_release_rule, outdir: Path, short_rep
 
 def run_batch(scenarios, methods, quick, loader_release_rule, outdir: Path,
               timeout_s: float | None, resume: bool = True, log_path: Path | None = None,
-              short_reps=None, workers=1):
+              short_reps=None, workers=1, dest_contention_rule='queued'):
     """Run every (instance, cv) x method combination with per-combination error
     handling, optional resume (skip combinations whose result JSON already
     exists), and an optional subprocess-level timeout so one hung combination
@@ -124,10 +125,11 @@ def run_batch(scenarios, methods, quick, loader_release_rule, outdir: Path,
             t0 = time.perf_counter()
             if timeout_s:
                 ok, row, err = _run_one_subprocess(m, iid, cv, quick, loader_release_rule, outdir,
-                                                    timeout_s, short_reps, workers)
+                                                    timeout_s, short_reps, workers, dest_contention_rule)
             else:
                 try:
-                    row = run_one(m, iid, cv, quick, loader_release_rule, outdir, short_reps, workers)
+                    row = run_one(m, iid, cv, quick, loader_release_rule, outdir, short_reps, workers,
+                                  dest_contention_rule)
                     ok, err = True, None
                 except Exception:
                     ok, row, err = False, None, traceback.format_exc()
@@ -171,14 +173,14 @@ def _kill_process_tree(pid: int) -> None:
 
 
 def _run_one_subprocess(method, iid, cv, quick, loader_release_rule, outdir: Path, timeout_s: float,
-                         short_reps=None, workers=1):
+                         short_reps=None, workers=1, dest_contention_rule='queued'):
     """Run one combination in a child process so a hang (infinite/very long TSI
     search on an oversized instance) can be killed after timeout_s instead of
     stalling the whole batch."""
     cmd = [sys.executable, str(Path(__file__).resolve()),
            '--method', method, '--instance', iid, '--cv', str(cv),
            '--outdir', str(outdir), '--loader-release-rule', loader_release_rule,
-           '--workers', str(workers),
+           '--workers', str(workers), '--dest-contention-rule', dest_contention_rule,
            '--single-run']
     if quick:
         cmd.append('--quick')
@@ -238,6 +240,13 @@ def main():
                          'docs/PERFIL_MAQUINA.md), and 4 worker processes each holding a copy of the '
                          'instance/solution risk swapping, which would make runs slower, not faster. '
                          'See docs/DECISIONES.md, Fase 6.')
+    ap.add_argument('--dest-contention-rule',choices=['queued','none'],default='queued',
+                    help="mc method only: 'queued' (default since Fase 8) serializes dumps at each "
+                         "destination (Plant/Pad) through a single-server queue, matching des.py's "
+                         "dest_busy/dest_queue; 'none' reproduces the pre-Fase-8 behavior (dumps "
+                         "computed independently per job, can silently overlap in time) for explicit "
+                         "comparison. Not supported together with --loader-release-rule full_cycle. "
+                         "See docs/DECISIONES.md, Fase 8.")
     ap.add_argument('--single-run',action='store_true',help=argparse.SUPPRESS)
     args=ap.parse_args()
     outdir = Path(args.outdir).resolve() if args.outdir else RESULTS
@@ -248,7 +257,7 @@ def main():
         # Internal entry point used by _run_one_subprocess(): exactly one combination,
         # no resume/logging wrapper (the parent process handles that).
         row = run_one(args.method, args.instance, args.cv, args.quick, args.loader_release_rule,
-                      outdir, args.short_reps, args.workers)
+                      outdir, args.short_reps, args.workers, args.dest_contention_rule)
         write_summary([row], outdir)
         return
 
@@ -259,6 +268,6 @@ def main():
         scenarios=[(args.instance,args.cv)]
     run_batch(scenarios, methods, args.quick, args.loader_release_rule, outdir,
               timeout_s=(args.timeout_s or None), resume=not args.no_resume, short_reps=args.short_reps,
-              workers=args.workers)
+              workers=args.workers, dest_contention_rule=args.dest_contention_rule)
 
 if __name__=='__main__': main()

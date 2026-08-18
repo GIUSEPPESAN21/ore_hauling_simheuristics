@@ -44,9 +44,21 @@ class MCDesConsistencyTests(unittest.TestCase):
     def test_full_cycle_preserves_pre_fase2_behavior(self):
         inst = _congested_instance()
         solution = [[0, 1]]
+        # dest_contention_rule='none' explicitly: 'full_cycle' couples a loader's next
+        # start to the FINISH of the truck it just released, which under 'queued' would
+        # in turn depend on the shared destination queue -- a coupling evaluate_mc()
+        # rejects (see Fase 8). 'none' is the only dest_contention_rule compatible with
+        # 'full_cycle', and reproduces this pre-Fase-2/pre-Fase-8 value unchanged.
         mc_full = evaluate_mc(inst, solution, cv=0.0, reps=1, base_seed=500000,
-                              loader_release_rule='full_cycle')
+                              loader_release_rule='full_cycle', dest_contention_rule='none')
         self.assertAlmostEqual(mc_full['mean_cmax_min'], 54.0, places=9)
+
+    def test_full_cycle_with_queued_contention_rejected(self):
+        inst = _congested_instance()
+        solution = [[0, 1]]
+        with self.assertRaises(ValueError):
+            evaluate_mc(inst, solution, cv=0.0, reps=1, base_seed=500000,
+                       loader_release_rule='full_cycle', dest_contention_rule='queued')
 
 
 if __name__ == '__main__':

@@ -719,3 +719,189 @@ lo que puede requerir ajustar cómo se describe el método en el paper.
 **No se toma esta decisión por cuenta propia.** Se deja señalada aquí, con las dos opciones y sus
 implicaciones concretas, para que el usuario decida antes de dar el lote por definitivamente
 cerrado para el paper.
+
+**Decisión del usuario (sesión 2026-08-17, continuación):** opción (b) — corregir `mc.py` y
+re-correr las combinaciones de SimTSI-MC afectadas. Implementación documentada en la Fase 8.
+
+## Fase 8 — Contención en destinos para SimTSI-MC (sesión 2026-08-17, continuación)
+
+### Diagnóstico antes de tocar código
+
+**Mecanismo de referencia en `des.py`** (`DESimulator`), leído línea por línea antes de
+modificar nada:
+
+- `self.dest_busy = {'Plant': False, 'Pad': False}` y `self.dest_queue = {'Plant': deque(),
+  'Pad': deque()}` — un flag de ocupación y una cola FIFO por destino (`des.py:27-28`).
+- Evento `arrive_dest`: si `not dest_busy[dest]`, el camión empieza a descargar de inmediato
+  (`_start_dump`); si el destino está ocupado, el camión pasa a `waiting_dump` y se encola en
+  `dest_queue[dest]` (`des.py:109-116`).
+- Evento `dump_end`: si hay algo en la cola del destino, se saca el siguiente camión
+  (`dest_queue[dest].popleft()`), se le suma su espera a `truck_wait`, y se le arranca la
+  descarga (`_start_dump`); si la cola está vacía, `dest_busy[dest]=False` (`des.py:117-129`).
+- `_start_dump(dest, jid)` marca `dest_busy[dest]=True`, muestrea la duración de descarga, y
+  acumula esa duración en `dest_busy_time[dest]` (usado luego para `plant_dump_utilization` /
+  `pad_dump_utilization`) (`des.py:79-85`).
+
+Es, en esencia, un servidor único (single-server queue) por destino: como máximo un camión
+descarga a la vez en Plant y uno en Pad; el resto espera en FIFO.
+
+**Confirmado leyendo el código (no asumido): `DynSimTSI-DES` usa el evaluador DES, no el de
+MC.** `dynsimtsi_des.py` importa `from des import DESimulator` y `from simtsi_des import
+run_simtsi_des` — ni `mc.py` ni `simtsi_mc.py` aparecen en ningún import de `dynsimtsi_des.py`.
+Tanto la solución estática inicial (`run_simtsi_des`) como cada rollout de reoptimización
+(`_rollout_fitness`, que clona un `DESimulator` real vía `sim.clone()`) usan el simulador DES
+completo, con su propio `dest_busy`/`dest_queue`. **Conclusión: el cambio de esta fase afecta
+únicamente a las combinaciones `method=mc`; `des` y `dynamic` quedan exactamente iguales, sin
+necesidad de volver a correrlas.**
+
+**Control de versiones:** `git status` confirmó el árbol de trabajo limpio antes de tocar
+`mc.py` (el cierre del lote de la sesión anterior ya estaba comiteado, commit `e78cb09`), así
+que el propio historial de git sirve como respaldo del "antes" sin necesidad de copias
+adicionales.
+
+### Implementación
+
+**Problema estructural:** `mc.py` calcula cada trabajo (`_one_mc_rep`) de forma completamente
+analítica, iterando cargador por cargador; el `dump_end` de un trabajo se computaba como
+`load_end + haul + dump`, sin mirar qué estaban haciendo los trabajos de OTROS cargadores en el
+mismo destino en esa ventana de tiempo — de ahí que dos descargas pudieran solaparse
+silenciosamente en el tiempo.
+
+**Solución: evaluación en dos pasadas dentro de `_one_mc_rep()`** (`mc.py`):
+
+1. **Pasada 1 (por cargador, secuencial, sin cambios de fondo respecto a antes):** cada
+   cargador procesa su propia secuencia de trabajos uno a la vez, dando a cada trabajo un
+   `load_end` y un `arrive_dest = load_end + haul` — el instante en que el camión está listo
+   para descargar, todavía sin saber si el destino está libre. Esta pasada es independiente de
+   la contención en destinos porque, bajo la regla de producción `loader_release_rule=
+   'load_only'` (Fase 2a), la disponibilidad de un cargador (`free`) depende solo de
+   `load_end`, nunca de lo que hagan los camiones de otros cargadores en Plant/Pad.
+2. **Pasada 2 (por destino, cruzando TODOS los cargadores):** los trabajos que llegan al mismo
+   destino se procesan en orden de llegada (`sorted` por `arrive_dest`, con el `id` del trabajo
+   como desempate determinista) y se serializan a través de un único `dest_free_at` por
+   destino — exactamente el mismo comportamiento de servidor único que `dest_busy`/`dest_queue`
+   en `des.py`, solo que calculado analíticamente en vez de con un bucle de eventos.
+
+**Nuevo flag, mismo patrón que `--loader-release-rule` de la Fase 2a — no se reemplaza el
+comportamiento viejo, se preserva detrás de una opción explícita:**
+`--dest-contention-rule {queued,none}` en `run_all.py`, propagado por
+`run()`→`run_simtsi_mc()`→`evaluate_mc()`→`_one_mc_rep()`. `queued` (nuevo valor por defecto)
+activa la pasada 2; `none` reproduce exactamente el cálculo analítico anterior a esta fase (cada
+descarga calculada de forma independiente, pudiendo solaparse). `evaluate_mc()` ahora también
+devuelve `mean_truck_wait_min`, `mean_plant_dump_utilization` y `mean_pad_dump_utilization`
+(antes ausentes del esquema de salida de MC), calculados de la misma forma que en `des.py`, para
+que la comparación MC-vs-DES sea directa sobre las mismas métricas.
+
+**Combinación explícitamente rechazada, no silenciosamente mal calculada:**
+`dest_contention_rule='queued'` junto con `loader_release_rule='full_cycle'` lanza `ValueError`.
+Razón: bajo `full_cycle`, el siguiente arranque de un cargador depende del `finish` (no del
+`load_end`) del camión que acaba de soltar, y ese `finish` dependería a su vez de la cola
+compartida del destino — acoplando el horario de cada cargador al de todos los demás en cada
+paso, lo cual exige una simulación de eventos completa (equivalente a `des.py`), no el enfoque
+analítico de dos pasadas usado aquí. Como `full_cycle` es una opción heredada, solo para
+comparación explícita (la producción siempre usa `load_only`), se rechaza esta combinación en
+vez de producir un resultado inconsistente sin avisar.
+
+**Reproducibilidad de las corridas anteriores confirmada por lectura de código:** cada muestra
+de `lognormal_mean_cv()` se siembra únicamente a partir de `(base_seed, replicate, job_id,
+component, loader_id)` vía `np.random.SeedSequence` (`random_streams.py:13-15`) — nunca del
+orden de las llamadas. Por eso reordenar el muestreo (samplear `dump` y `return` antes de saber
+el instante real de descarga) no cambia ningún número aleatorio: el camino
+`dest_contention_rule='none'` reproduce bit a bit los resultados de antes de esta fase.
+
+### Caso de prueba determinístico (evidencia numérica, `tests/test_dest_contention.py`)
+
+Instancia mínima: **2 cargadores, 1 trabajo cada uno, mismo destino (`Plant`), mismos tiempos
+medios** (`load=5`, `haul=10`, `dump=5`, `return=10`), ambos liberados en `t=0`, `cv=0` (sin
+aleatoriedad) — diseñada para que los dos camiones lleguen a Plant exactamente en el mismo
+instante (`t=15`) y la cola del destino sea decisiva.
+
+| Evaluador | `mean_cmax_min` | `mean_truck_wait_min` |
+|---|---|---|
+| `evaluate_mc(dest_contention_rule='none')` — comportamiento pre-Fase-8 | **30.0** | 0.0 |
+| `evaluate_mc(dest_contention_rule='queued')` — nuevo default | **35.0** | 2.5 |
+| `evaluate_des` | **35.0** | 2.5 |
+
+Diferencia: **5.0 minutos (16.7% más alto) al activar la contención**, exactamente igual a la
+duración de la descarga del camión que bloquea la cola — sin ninguna aleatoriedad de por medio,
+confirma que es una corrección de modelado, no varianza estadística. `evaluate_mc(queued)`
+coincide con `evaluate_des` a 9 decimales en `mean_cmax_min`, `mean_truck_wait_min` y
+`mean_plant_dump_utilization` (verificado con `assertAlmostEqual(..., places=9)`), confirmando
+que la pasada 2 reproduce exactamente la semántica de `dest_busy`/`dest_queue` de `des.py`.
+Traza manual paso a paso del evento `dump_end`/`dest_queue` de `des.py` para este mismo caso
+(hecha antes de escribir el test, para verificar la implementación contra la especificación, no
+al revés) reproduce los mismos 35.0 min.
+
+### Pruebas
+
+Se agregó `tests/test_dest_contention.py` (3 pruebas nuevas: `queued` coincide con DES,
+`none` reproduce el comportamiento pre-Fase-8, `queued` es el valor por defecto). Se actualizó
+`tests/test_mc_des_consistency.py`: `test_full_cycle_preserves_pre_fase2_behavior` ahora pasa
+`dest_contention_rule='none'` explícitamente (la única combinación válida con `full_cycle`; sin
+este cambio el nuevo default `queued` habría hecho que esa prueba lanzara `ValueError`), y se
+agregó `test_full_cycle_with_queued_contention_rejected` para confirmar explícitamente el
+rechazo de la combinación no soportada.
+
+**Las 10 pruebas de `tests/` pasan** (`.venv/Scripts/python.exe -m unittest discover -s tests -t
+. -v`): las 6 anteriores sin cambios de comportamiento (`test_smoke.py` ×3,
+`test_summary_accumulates.py`, `test_mc_des_consistency.py` ×2, una de ellas actualizada como se
+explicó arriba) más las 4 nuevas/actualizadas de esta fase.
+
+### Re-corrida de SimTSI-MC: conteo, medición previa y lanzamiento
+
+**Conteo verificado por archivos reales, no asumido:** `resultados_paper/raw/mc_*.json` contiene
+exactamente **40 archivos** (10 instancias × 4 niveles de CV), tal como se esperaba.
+
+**Medición de UNA combinación mediana antes de relanzar las 40** (`I05 cv=0.10`, con
+`--dest-contention-rule queued --workers 2`, en un `--outdir` aislado para no tocar
+`resultados_paper/raw/` todavía):
+
+```
+.venv/Scripts/python.exe run_all.py --method mc --instance I05 --cv 0.10 --short-reps 5 \
+  --loader-release-rule load_only --dest-contention-rule queued --workers 2 --outdir <aislado>
+```
+
+| Métrica | Antes (sin contención) | Después (con contención) |
+|---|---|---|
+| `cpu_s` | 241.26 s | 217.77 s |
+| `mean_cmax_min` | 1079.398741083064 | 1079.398741083064 (idéntico) |
+| `mean_truck_wait_min` | (no existía este campo) | 0.0 |
+
+**Hallazgo:** el overhead de la pasada 2 (ordenar y serializar por destino) es despreciable —
+217.8 s está dentro del ruido normal de medición frente a los 241.3 s de antes, no hay evidencia
+de costo adicional relevante. Para esta combinación específica (`I05 cv=0.10`) el resultado
+numérico no cambió en absoluto: `mean_truck_wait_min=0.0` confirma que, con la solución óptima
+encontrada, ningún camión llegó a esperar cola en un destino — consistente con lo ya documentado
+desde la Fase 2a (las instancias surrogate actuales tienen releases muy espaciados a lo largo de
+24h, utilización de loader/destino muy baja). Esto es evidencia real, no una suposición: la
+corrección del modelo es correcta y necesaria para el paper, pero su impacto numérico exacto
+varía combinación por combinación según cuánto convergen los camiones en el tiempo — algunas
+combinaciones (especialmente instancias grandes con más loaders, I06-I10) sí mostrarán cambios,
+otras no, y eso se reporta tal cual sale, sin forzar un resultado esperado.
+
+**Decisión de `--timeout-s`:** sin evidencia de overhead relevante, y dado que ninguna de las 40
+combinaciones de `mc` se acercó nunca al límite de producción de 4500 s (el máximo histórico
+observado fue `mc_I10_cv20` en 2294.65 s ≈ 38.2 min), se mantiene `--timeout-s 4500` para la
+re-corrida completa — el mismo valor de producción, con margen amplio ya validado.
+
+**Comando de re-corrida** (las 40 combinaciones `method=mc`, `--no-resume` para forzar el
+recálculo de las 40 aunque sus archivos `.json` ya existan — el mecanismo de deduplicación por
+`(instance, method, cv, replications)` en `_write_summary()` reemplaza sus filas viejas en
+`summary.csv` en vez de duplicarlas):
+
+```
+.venv/Scripts/python.exe run_all.py --method mc --batch --short-reps 5 \
+  --loader-release-rule load_only --dest-contention-rule queued --workers 2 \
+  --timeout-s 4500 --no-resume --outdir resultados_paper/raw
+```
+
+**Valores "antes" guardados para comparación tras el re-run** (extraídos de los `.json` ya en
+`resultados_paper/raw/` antes de sobrescribirlos):
+
+| Combinación | `mean_cmax_min` antes | `cpu_s` antes |
+|---|---|---|
+| `mc_I01_cv05` | 686.064484547715 | 0.166 s |
+| `mc_I05_cv10` | 1079.398741083064 | 241.255 s |
+| `mc_I06_cv20` | 956.8095569085408 | 488.316 s |
+| `mc_I09_cv30` | 1031.32898226479 | 1899.616 s |
+| `mc_I10_cv30` | 1094.6010252851513 | 3680.321 s |
