@@ -1074,3 +1074,8 @@
 {"method": "mc", "instance": "I09", "cv": 0.05, "quick": false, "tag": "mc_I09_cv05", "status": "ok", "elapsed_s": 1948.8842216000194}
 {"method": "mc", "instance": "I09", "cv": 0.1, "quick": false, "tag": "mc_I09_cv10", "status": "ok", "elapsed_s": 1921.917511799984}
 {"method": "mc", "instance": "I09", "cv": 0.2, "quick": false, "tag": "mc_I09_cv20", "status": "ok", "elapsed_s": 1944.3468942999898}
+{"method": "mc", "instance": "I09", "cv": 0.3, "quick": false, "tag": "mc_I09_cv30", "status": "ok", "elapsed_s": 2019.5948522999824}
+{"method": "mc", "instance": "I10", "cv": 0.05, "quick": false, "tag": "mc_I10_cv05", "status": "ok", "elapsed_s": 2452.8867657000083}
+{"method": "mc", "instance": "I10", "cv": 0.1, "quick": false, "tag": "mc_I10_cv10", "status": "ok", "elapsed_s": 2463.865596399992}
+{"method": "mc", "instance": "I10", "cv": 0.2, "quick": false, "tag": "mc_I10_cv20", "status": "ok", "elapsed_s": 2496.2950577999873}
+{"method": "mc", "instance": "I10", "cv": 0.3, "quick": false, "tag": "mc_I10_cv30", "status": "ok", "elapsed_s": 2487.945939600002}

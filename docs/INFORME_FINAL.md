@@ -247,10 +247,26 @@ ningún proceso — el batch terminó limpio, sin huérfanos.
 regenerados** con `generate_deliverables.py` (nuevo en este pase, reutilizable) a partir del
 estado real de `resultados_paper/raw/` — ya no reflejan el snapshot provisional de 104/120.
 
-**Decisión pendiente para el usuario, señalada explícitamente y sin resolver en este pase:**
-`SimTSI-MC` no modela contención en los puntos de descarga (Plant/Pad), a diferencia de
-`SimTSI-DES` (ver Fase 2a). Esto es una segunda fuente de discrepancia estructural entre ambos
-métodos, además de la ya corregida sobre la liberación del loader. `docs/DECISIONES.md` (Fase 7)
-presenta las dos opciones concretas (aceptar como limitación documentada del método vs.
-corregirlo y re-correr las 39 combinaciones de SimTSI-MC ya calculadas) para que el usuario
-decida antes de dar el lote por definitivamente cerrado para el paper.
+**Decisión resuelta (Fase 8, sesión 2026-08-17 continuación):** `SimTSI-MC` no modelaba
+contención en los puntos de descarga (Plant/Pad), a diferencia de `SimTSI-DES` (ver Fase 2a) —
+una segunda fuente de discrepancia estructural entre ambos métodos, además de la ya corregida
+sobre la liberación del loader. `docs/DECISIONES.md` (Fase 7) presentó dos opciones; el usuario
+eligió la opción (b): corregir `mc.py` y re-correr las 40 combinaciones de SimTSI-MC afectadas.
+
+**Implementación:** evaluación en dos pasadas en `_one_mc_rep()` (`mc.py`) — la pasada 1
+(por cargador) queda igual que antes; la pasada 2 (nueva) serializa las descargas de todos los
+cargadores por destino a través de un único `dest_free_at`, replicando exactamente la semántica
+`dest_busy`/`dest_queue` de `des.py`. Nuevo flag `--dest-contention-rule {queued,none}` (`queued`
+default, `none` preserva el comportamiento anterior sin tocarlo), siguiendo el mismo patrón que
+`--loader-release-rule` de la Fase 2a. Verificado con un caso de prueba determinístico
+(`tests/test_dest_contention.py`, cv=0): `evaluate_mc(queued)` coincide con `evaluate_des` a 9
+decimales (35.0 min vs. 30.0 min con `none`, diferencia de exactamente la duración de la
+descarga en cola). 10/10 pruebas de `tests/` pasan tras el cambio.
+
+**Resultado de la re-corrida de las 40 combinaciones de SimTSI-MC** (comparado contra el commit
+anterior a este cambio, `e78cb09`, no contra memoria): **4/40 cambiaron su `mean_cmax_min`**
+(todas de I08, diferencia máxima +0.39 min / +0.036%); las otras 36 no cambiaron el `cmax`
+reportado, aunque 22 de ellas sí registran espera en destino en `mean_truck_wait_min` — la
+contención ocurrió pero nunca cayó en el camión que determina el makespan. Consistente con la
+baja utilización/congestión ya documentada de las instancias surrogate actuales (Fase 2a, Fase
+4). Ver `docs/DECISIONES.md`, Fase 8, para la tabla completa y la evidencia numérica.

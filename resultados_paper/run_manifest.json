@@ -1,6 +1,6 @@
 {
-  "generated_at_local": "2026-08-17T11:21:42.731600-05:00",
-  "generated_at_utc": "2026-08-17T16:21:42.731600+00:00",
+  "generated_at_local": "2026-08-17T23:28:31.732412-05:00",
+  "generated_at_utc": "2026-08-18T04:28:31.732412+00:00",
   "status_note": "Estado DEFINITIVO del lote: 118/120 combinaciones completas y validadas; 2 no completadas por costo computacional (timeout, evidencia de tiempo medido en cada entrada); 0 con error; 0 nunca intentadas. Lote cerrado para esta ronda de corridas.",
   "configuration": {
     "short_reps": 5,
@@ -13,6 +13,7 @@
       "dynamic_I09_cv30": 7200
     },
     "workers": 2,
+    "dest_contention_rule": "queued",
     "tsi_params": {
       "tenure": 10,
       "max_iters": 1000,
@@ -26,9 +27,10 @@
     }
   },
   "known_limitation_pending_decision": {
-    "topic": "SimTSI-MC no modela contencion en destinos (Plant/Pad)",
-    "ref": "docs/DECISIONES.md, Fase 2a y Fase 7",
-    "decided": false
+    "topic": "SimTSI-MC no modelaba contencion en destinos (Plant/Pad)",
+    "ref": "docs/DECISIONES.md, Fase 2a, Fase 7 y Fase 8",
+    "decided": true,
+    "decision": "opcion (b) -- corregido e implementado en mc.py (--dest-contention-rule queued, nuevo default), las 40 combinaciones de SimTSI-MC re-corridas. 4/40 combinaciones cambiaron su mean_cmax_min (todas I08, diferencia maxima +0.39 min / +0.036%); las otras 36 no cambiaron el cmax reportado (22 de ellas si registraron espera en destino en mean_truck_wait_min, pero nunca en el camion que determina el makespan). Ver docs/DECISIONES.md, Fase 8, para la evidencia numerica completa."
   },
   "totals": {
     "expected": 120,
@@ -45,7 +47,7 @@
       "instance": "I01",
       "cv": 0.05,
       "status": "ok",
-      "cpu_s": 0.16557390009984374,
+      "cpu_s": 0.8943636000039987,
       "mean_cmax_min": 686.064484547715,
       "replications": 500
     },
@@ -75,7 +77,7 @@
       "instance": "I01",
       "cv": 0.1,
       "status": "ok",
-      "cpu_s": 0.33515379996970296,
+      "cpu_s": 0.6965743000037037,
       "mean_cmax_min": 686.0280257671607,
       "replications": 500
     },
@@ -105,7 +107,7 @@
       "instance": "I01",
       "cv": 0.2,
       "status": "ok",
-      "cpu_s": 0.17584670009091496,
+      "cpu_s": 0.9184000999957789,
       "mean_cmax_min": 685.9620924385795,
       "replications": 500
     },
@@ -135,7 +137,7 @@
       "instance": "I01",
       "cv": 0.3,
       "status": "ok",
-      "cpu_s": 0.24515590001828969,
+      "cpu_s": 0.8100436999811791,
       "mean_cmax_min": 685.9062768122199,
       "replications": 500
     },
@@ -165,7 +167,7 @@
       "instance": "I02",
       "cv": 0.05,
       "status": "ok",
-      "cpu_s": 0.7289448000956327,
+      "cpu_s": 1.3573323999880813,
       "mean_cmax_min": 831.9370540097556,
       "replications": 500
     },
@@ -195,7 +197,7 @@
       "instance": "I02",
       "cv": 0.1,
       "status": "ok",
-      "cpu_s": 0.6310437000356615,
+      "cpu_s": 1.2708781999826897,
       "mean_cmax_min": 831.9526623803654,
       "replications": 500
     },
@@ -225,7 +227,7 @@
       "instance": "I02",
       "cv": 0.2,
       "status": "ok",
-      "cpu_s": 0.678485699929297,
+      "cpu_s": 1.2283268999890424,
       "mean_cmax_min": 831.9823639323884,
       "replications": 500
     },
@@ -255,7 +257,7 @@
       "instance": "I02",
       "cv": 0.3,
       "status": "ok",
-      "cpu_s": 0.5673843000549823,
+      "cpu_s": 1.1679861999873538,
       "mean_cmax_min": 832.0098611905582,
       "replications": 500
     },
@@ -285,7 +287,7 @@
       "instance": "I03",
       "cv": 0.05,
       "status": "ok",
-      "cpu_s": 29.58680749987252,
+      "cpu_s": 23.831641900003888,
       "mean_cmax_min": 836.7950304944779,
       "replications": 500
     },
@@ -315,7 +317,7 @@
       "instance": "I03",
       "cv": 0.1,
       "status": "ok",
-      "cpu_s": 32.110768999904394,
+      "cpu_s": 24.03757570000016,
       "mean_cmax_min": 836.8054435404316,
       "replications": 500
     },
@@ -345,7 +347,7 @@
       "instance": "I03",
       "cv": 0.2,
       "status": "ok",
-      "cpu_s": 30.49409139994532,
+      "cpu_s": 28.00977229999262,
       "mean_cmax_min": 836.8189838285958,
       "replications": 500
     },
@@ -375,7 +377,7 @@
       "instance": "I03",
       "cv": 0.3,
       "status": "ok",
-      "cpu_s": 29.07566439989023,
+      "cpu_s": 25.83374649999314,
       "mean_cmax_min": 836.8241711585941,
       "replications": 500
     },
@@ -405,7 +407,7 @@
       "instance": "I04",
       "cv": 0.05,
       "status": "ok",
-      "cpu_s": 184.8590243998915,
+      "cpu_s": 138.95213960000547,
       "mean_cmax_min": 928.5261657259659,
       "replications": 500
     },
@@ -435,7 +437,7 @@
       "instance": "I04",
       "cv": 0.1,
       "status": "ok",
-      "cpu_s": 164.14960690005682,
+      "cpu_s": 137.1990313999995,
       "mean_cmax_min": 928.49330172342,
       "replications": 500
     },
@@ -465,7 +467,7 @@
       "instance": "I04",
       "cv": 0.2,
       "status": "ok",
-      "cpu_s": 135.76210859999992,
+      "cpu_s": 144.273394799995,
       "mean_cmax_min": 928.4308419543663,
       "replications": 500
     },
@@ -495,7 +497,7 @@
       "instance": "I04",
       "cv": 0.3,
       "status": "ok",
-      "cpu_s": 133.7109886999242,
+      "cpu_s": 109.9546475999814,
       "mean_cmax_min": 928.3731337520242,
       "replications": 500
     },
@@ -525,7 +527,7 @@
       "instance": "I05",
       "cv": 0.05,
       "status": "ok",
-      "cpu_s": 241.29429330001585,
+      "cpu_s": 165.5347762000165,
       "mean_cmax_min": 1079.3773807579332,
       "replications": 500
     },
@@ -555,7 +557,7 @@
       "instance": "I05",
       "cv": 0.1,
       "status": "ok",
-      "cpu_s": 241.25519150006585,
+      "cpu_s": 214.4369297999947,
       "mean_cmax_min": 1079.398741083064,
       "replications": 500
     },
@@ -585,7 +587,7 @@
       "instance": "I05",
       "cv": 0.2,
       "status": "ok",
-      "cpu_s": 239.98598559992388,
+      "cpu_s": 172.8565140000137,
       "mean_cmax_min": 1079.453978501307,
       "replications": 500
     },
@@ -615,7 +617,7 @@
       "instance": "I05",
       "cv": 0.3,
       "status": "ok",
-      "cpu_s": 240.34230479993857,
+      "cpu_s": 169.1684319000051,
       "mean_cmax_min": 1079.5260796809691,
       "replications": 500
     },
@@ -645,7 +647,7 @@
       "instance": "I06",
       "cv": 0.05,
       "status": "ok",
-      "cpu_s": 688.2803244001698,
+      "cpu_s": 451.4752540999907,
       "mean_cmax_min": 956.5398590167716,
       "replications": 500
     },
@@ -675,7 +677,7 @@
       "instance": "I06",
       "cv": 0.1,
       "status": "ok",
-      "cpu_s": 480.2606607999187,
+      "cpu_s": 422.88049389998196,
       "mean_cmax_min": 956.6330636340855,
       "replications": 500
     },
@@ -705,7 +707,7 @@
       "instance": "I06",
       "cv": 0.2,
       "status": "ok",
-      "cpu_s": 488.3157573998906,
+      "cpu_s": 365.1511590000009,
       "mean_cmax_min": 956.8095569085408,
       "replications": 500
     },
@@ -735,7 +737,7 @@
       "instance": "I06",
       "cv": 0.3,
       "status": "ok",
-      "cpu_s": 492.76595430006273,
+      "cpu_s": 435.35232899998664,
       "mean_cmax_min": 956.9701441211836,
       "replications": 500
     },
@@ -765,7 +767,7 @@
       "instance": "I07",
       "cv": 0.05,
       "status": "ok",
-      "cpu_s": 904.4860514998436,
+      "cpu_s": 792.4311761000135,
       "mean_cmax_min": 991.5025241760244,
       "replications": 500
     },
@@ -795,7 +797,7 @@
       "instance": "I07",
       "cv": 0.1,
       "status": "ok",
-      "cpu_s": 824.1468943999989,
+      "cpu_s": 823.73063060001,
       "mean_cmax_min": 991.539024587428,
       "replications": 500
     },
@@ -825,7 +827,7 @@
       "instance": "I07",
       "cv": 0.2,
       "status": "ok",
-      "cpu_s": 839.7048289999984,
+      "cpu_s": 853.620405499998,
       "mean_cmax_min": 991.5801075142247,
       "replications": 500
     },
@@ -855,7 +857,7 @@
       "instance": "I07",
       "cv": 0.3,
       "status": "ok",
-      "cpu_s": 843.2603397999992,
+      "cpu_s": 847.4489585999982,
       "mean_cmax_min": 991.6264885016399,
       "replications": 500
     },
@@ -885,8 +887,8 @@
       "instance": "I08",
       "cv": 0.05,
       "status": "ok",
-      "cpu_s": 1380.6548124,
-      "mean_cmax_min": 1086.9210930741538,
+      "cpu_s": 1229.2943092000205,
+      "mean_cmax_min": 1087.1291758881307,
       "replications": 500
     },
     {
@@ -915,8 +917,8 @@
       "instance": "I08",
       "cv": 0.1,
       "status": "ok",
-      "cpu_s": 1255.196512300001,
-      "mean_cmax_min": 1086.8572856811516,
+      "cpu_s": 1244.5818709000014,
+      "mean_cmax_min": 1087.2468225463851,
       "replications": 500
     },
     {
@@ -945,8 +947,8 @@
       "instance": "I08",
       "cv": 0.2,
       "status": "ok",
-      "cpu_s": 1462.1717583999998,
-      "mean_cmax_min": 1087.1094144288622,
+      "cpu_s": 1304.2553604999848,
+      "mean_cmax_min": 1087.4130596815755,
       "replications": 500
     },
     {
@@ -975,8 +977,8 @@
       "instance": "I08",
       "cv": 0.3,
       "status": "ok",
-      "cpu_s": 1488.5481469000006,
-      "mean_cmax_min": 1087.5896744569584,
+      "cpu_s": 1327.8904470000125,
+      "mean_cmax_min": 1087.7305884608472,
       "replications": 500
     },
     {
@@ -1005,7 +1007,7 @@
       "instance": "I09",
       "cv": 0.05,
       "status": "ok",
-      "cpu_s": 2127.820512600003,
+      "cpu_s": 1946.8264269999927,
       "mean_cmax_min": 1031.071174478439,
       "replications": 500
     },
@@ -1035,7 +1037,7 @@
       "instance": "I09",
       "cv": 0.1,
       "status": "ok",
-      "cpu_s": 2270.717585899998,
+      "cpu_s": 1920.0273591000005,
       "mean_cmax_min": 1031.1238188876353,
       "replications": 500
     },
@@ -1065,7 +1067,7 @@
       "instance": "I09",
       "cv": 0.2,
       "status": "ok",
-      "cpu_s": 2216.8820118000003,
+      "cpu_s": 1942.3177723999834,
       "mean_cmax_min": 1031.2284374900164,
       "replications": 500
     },
@@ -1094,7 +1096,7 @@
       "instance": "I09",
       "cv": 0.3,
       "status": "ok",
-      "cpu_s": 1899.6162225000007,
+      "cpu_s": 2017.568206099997,
       "mean_cmax_min": 1031.32898226479,
       "replications": 500
     },
@@ -1123,7 +1125,7 @@
       "instance": "I10",
       "cv": 0.05,
       "status": "ok",
-      "cpu_s": 2277.1944913000043,
+      "cpu_s": 2450.8399207999755,
       "mean_cmax_min": 1094.8163469331432,
       "replications": 500
     },
@@ -1153,7 +1155,7 @@
       "instance": "I10",
       "cv": 0.1,
       "status": "ok",
-      "cpu_s": 2293.4484697000007,
+      "cpu_s": 2461.8114373999997,
       "mean_cmax_min": 1094.7683148845676,
       "replications": 500
     },
@@ -1183,7 +1185,7 @@
       "instance": "I10",
       "cv": 0.2,
       "status": "ok",
-      "cpu_s": 2292.5960803999915,
+      "cpu_s": 2493.43709750002,
       "mean_cmax_min": 1094.6748284807115,
       "replications": 500
     },
@@ -1213,7 +1215,7 @@
       "instance": "I10",
       "cv": 0.3,
       "status": "ok",
-      "cpu_s": 3680.320650400012,
+      "cpu_s": 2486.000787600002,
       "mean_cmax_min": 1094.6010252851513,
       "replications": 500
     },

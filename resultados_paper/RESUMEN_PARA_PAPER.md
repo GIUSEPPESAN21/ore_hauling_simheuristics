@@ -1,12 +1,12 @@
 # Resumen de resultados para el paper
 
-Generado automáticamente por `generate_deliverables.py` a partir de `resultados_paper/raw/` (snapshot generado el 2026-08-17 11:21:42).
+Generado automáticamente por `generate_deliverables.py` a partir de `resultados_paper/raw/` (snapshot generado el 2026-08-17 23:28:31).
 
 **Estado del lote:** Estado DEFINITIVO del lote: 118/120 combinaciones completas y validadas; 2 no completadas por costo computacional (timeout, evidencia de tiempo medido en cada entrada); 0 con error; 0 nunca intentadas. Lote cerrado para esta ronda de corridas.
 
 **Nota importante:** las 10 instancias (I01-I10) son **surrogate** — datos sintéticos generados para verificación de código, marcados explícitamente como `SURROGATE` en `data/instances/*.json` (`provenance_note`). No representan la operación real de la mina; deben reemplazarse por las instancias originales exactas antes de reportar estos números como resultados operativos en el artículo final.
 
-**Decisión de diseño pendiente para el paper (no resuelta en este pase):** `SimTSI-MC` no modela contención en los puntos de descarga (Plant/Pad), a diferencia de `SimTSI-DES`. Ver `docs/DECISIONES.md`, Fase 7, para las dos opciones concretas — esto afecta cómo se debe presentar cualquier comparación cuantitativa MC-vs-DES.
+**Decisión de diseño resuelta (Fase 8):** `SimTSI-MC` ahora modela contención en los puntos de descarga (Plant/Pad) igual que `SimTSI-DES` (`--dest-contention-rule queued`, nuevo valor por defecto). Las 40 combinaciones de SimTSI-MC se re-corrieron: 4/40 (todas I08) cambiaron su `cmax` medio, con una diferencia máxima de +0.39 min (+0.036%); las otras 36 no cambiaron el `cmax` reportado, aunque 22 de ellas sí registran espera en destino en `mean_truck_wait_min` (la contención ocurrió pero nunca en el camión que determina el makespan). Ver `docs/DECISIONES.md`, Fase 8, para la evidencia numérica completa, incluido el caso de prueba determinístico que valida la implementación contra `SimTSI-DES` exactamente.
 
 ## Tabla de métricas clave por instancia, CV y método
 
@@ -96,16 +96,16 @@ Generado automáticamente por `generate_deliverables.py` a partir de `resultados
 | I07 | 7/14 | 0.3 | MC | 991.6 | 4.3 | 1.00 | 1.00 | 1.00 | - |
 | I07 | 7/14 | 0.3 | DES | 991.6 | 4.3 | 1.00 | 1.00 | 1.00 | - |
 | I07 | 7/14 | 0.3 | Dinámico | 991.6 | 4.3 | 1.00 | 1.00 | 1.00 | 0.0 |
-| I08 | 8/16 | 0.05 | MC | 1086.9 | 0.7 | 1.00 | 1.00 | 1.00 | - |
+| I08 | 8/16 | 0.05 | MC | 1087.1 | 0.6 | 1.00 | 1.00 | 1.00 | - |
 | I08 | 8/16 | 0.05 | DES | 1087.1 | 0.6 | 1.00 | 1.00 | 1.00 | - |
 | I08 | 8/16 | 0.05 | Dinámico | 1087.1 | 0.6 | 1.00 | 1.00 | 1.00 | 0.0 |
-| I08 | 8/16 | 0.1 | MC | 1086.9 | 1.3 | 1.00 | 1.00 | 1.00 | - |
+| I08 | 8/16 | 0.1 | MC | 1087.2 | 1.2 | 1.00 | 1.00 | 1.00 | - |
 | I08 | 8/16 | 0.1 | DES | 1087.2 | 1.2 | 1.00 | 1.00 | 1.00 | - |
 | I08 | 8/16 | 0.1 | Dinámico | 1087.2 | 1.2 | 1.00 | 1.00 | 1.00 | 0.0 |
-| I08 | 8/16 | 0.2 | MC | 1087.1 | 2.5 | 1.00 | 1.00 | 1.00 | - |
+| I08 | 8/16 | 0.2 | MC | 1087.4 | 2.4 | 1.00 | 1.00 | 1.00 | - |
 | I08 | 8/16 | 0.2 | DES | 1087.4 | 2.4 | 1.00 | 1.00 | 1.00 | - |
 | I08 | 8/16 | 0.2 | Dinámico | 1087.4 | 2.4 | 1.00 | 1.00 | 1.00 | 0.0 |
-| I08 | 8/16 | 0.3 | MC | 1087.6 | 3.7 | 1.00 | 1.00 | 1.00 | - |
+| I08 | 8/16 | 0.3 | MC | 1087.7 | 3.6 | 1.00 | 1.00 | 1.00 | - |
 | I08 | 8/16 | 0.3 | DES | 1087.7 | 3.6 | 1.00 | 1.00 | 1.00 | - |
 | I08 | 8/16 | 0.3 | Dinámico | 1087.7 | 3.6 | 1.00 | 1.00 | 1.00 | 0.0 |
 | I09 | 9/18 | 0.05 | MC | 1031.1 | 0.7 | 1.00 | 1.00 | 1.00 | - |

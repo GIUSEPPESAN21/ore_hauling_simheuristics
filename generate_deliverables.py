@@ -151,13 +151,21 @@ def main():
                 'dynamic_I09_cv30': 7200,
             },
             'workers': 2,
+            'dest_contention_rule': 'queued',
             'tsi_params': {'tenure': 10, 'max_iters': 1000, 'stag_limit': 25, 'perturb_moves': 3},
             'seeds': {'tsi_seed': 12345, 'sim_base_seed': 500000, 'rollout_base_seed': 900000},
         },
         'known_limitation_pending_decision': {
-            'topic': 'SimTSI-MC no modela contencion en destinos (Plant/Pad)',
-            'ref': 'docs/DECISIONES.md, Fase 2a y Fase 7',
-            'decided': False,
+            'topic': 'SimTSI-MC no modelaba contencion en destinos (Plant/Pad)',
+            'ref': 'docs/DECISIONES.md, Fase 2a, Fase 7 y Fase 8',
+            'decided': True,
+            'decision': 'opcion (b) -- corregido e implementado en mc.py (--dest-contention-rule '
+                        "queued, nuevo default), las 40 combinaciones de SimTSI-MC re-corridas. "
+                        '4/40 combinaciones cambiaron su mean_cmax_min (todas I08, diferencia '
+                        'maxima +0.39 min / +0.036%); las otras 36 no cambiaron el cmax reportado '
+                        '(22 de ellas si registraron espera en destino en mean_truck_wait_min, '
+                        'pero nunca en el camion que determina el makespan). Ver docs/DECISIONES.md, '
+                        'Fase 8, para la evidencia numerica completa.',
         },
         'totals': {'expected': total_expected, **counts},
         'anomalies': anomalies,
@@ -186,10 +194,15 @@ def main():
     )
     lines.append('')
     lines.append(
-        '**Decisión de diseño pendiente para el paper (no resuelta en este pase):** '
-        '`SimTSI-MC` no modela contención en los puntos de descarga (Plant/Pad), a diferencia de '
-        '`SimTSI-DES`. Ver `docs/DECISIONES.md`, Fase 7, para las dos opciones concretas — '
-        'esto afecta cómo se debe presentar cualquier comparación cuantitativa MC-vs-DES.'
+        '**Decisión de diseño resuelta (Fase 8):** `SimTSI-MC` ahora modela contención en los '
+        'puntos de descarga (Plant/Pad) igual que `SimTSI-DES` (`--dest-contention-rule queued`, '
+        'nuevo valor por defecto). Las 40 combinaciones de SimTSI-MC se re-corrieron: 4/40 '
+        '(todas I08) cambiaron su `cmax` medio, con una diferencia máxima de +0.39 min (+0.036%); '
+        'las otras 36 no cambiaron el `cmax` reportado, aunque 22 de ellas sí registran espera '
+        'en destino en `mean_truck_wait_min` (la contención ocurrió pero nunca en el camión que '
+        'determina el makespan). Ver `docs/DECISIONES.md`, Fase 8, para la evidencia numérica '
+        'completa, incluido el caso de prueba determinístico que valida la implementación contra '
+        '`SimTSI-DES` exactamente.'
     )
     lines.append('')
     lines.append('## Tabla de métricas clave por instancia, CV y método')

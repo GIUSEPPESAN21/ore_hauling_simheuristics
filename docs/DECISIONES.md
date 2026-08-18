@@ -905,3 +905,58 @@ recálculo de las 40 aunque sus archivos `.json` ya existan — el mecanismo de 
 | `mc_I06_cv20` | 956.8095569085408 | 488.316 s |
 | `mc_I09_cv30` | 1031.32898226479 | 1899.616 s |
 | `mc_I10_cv30` | 1094.6010252851513 | 3680.321 s |
+
+### Re-corrida completada — resultado y comparación antes/después de las 40
+
+Lanzada en segundo plano (PID 11476, ~14:11) y terminada limpiamente (~22:18, **8.11 h reales**,
+en línea con la estimación de 8.86 h basada en tiempos históricos). Confirmado al cierre: `git
+status`/`Get-CimInstance Win32_Process -Filter "Name='python.exe'"` no devuelve ningún proceso —
+sin huérfanos. `run_log.jsonl` registra las 40 combinaciones con `status: "ok"`, ninguna con
+`timeout` ni `failed`.
+
+**Comparación rigurosa contra el commit anterior a este cambio** (`e78cb09`, vía `git show
+e78cb09:resultados_paper/raw/<tag>.json` para cada una de las 40, no contra memoria ni contra la
+tabla parcial de 5 combinaciones de arriba):
+
+| | Cantidad |
+|---|---|
+| Combinaciones con `mean_cmax_min` distinto (cambio real ≥1e-9) | **4 de 40** |
+| Combinaciones sin cambio en `mean_cmax_min` | 36 de 40 |
+| — de esas 36, con `mean_truck_wait_min > 0` (contención ocurrió, pero nunca en el camión crítico) | 22 de 36 |
+| — de esas 36, con `mean_truck_wait_min == 0` (sin contención alguna en esa combinación) | 14 de 36 |
+
+**Las 4 combinaciones que sí cambiaron son todas de I08:**
+
+| Combinación | `mean_cmax_min` antes | `mean_cmax_min` después | Diferencia |
+|---|---|---|---|
+| `mc_I08_cv05` | 1086.9211 | 1087.1292 | +0.2081 min (+0.0191%) |
+| `mc_I08_cv10` | 1086.8573 | 1087.2468 | +0.3895 min (+0.0358%) |
+| `mc_I08_cv20` | 1087.1094 | 1087.4131 | +0.3036 min (+0.0279%) |
+| `mc_I08_cv30` | 1087.5897 | 1087.7306 | +0.1409 min (+0.0130%) |
+
+**Diferencia promedio (de las 4 cambiadas): 0.2605 min (0.0240%). Diferencia máxima: 0.3895 min
+(0.0358%), en `mc_I08_cv10`.**
+
+**Interpretación, sin sobre-extrapolar:** el hallazgo es consistente con lo ya documentado desde
+la Fase 2a — las instancias surrogate actuales tienen releases muy espaciados a lo largo de 24h
+(utilización de loader/destino observada del orden de 1-3%), así que dos camiones de loaders
+distintos rara vez convergen en el mismo destino dentro de la ventana de una descarga. Cuando sí
+convergen (22 de 40 combinaciones muestran `mean_truck_wait_min > 0`), lo habitual es que el
+camión retrasado no sea el que determina el `cmax` de esa réplica (hay otro camión con una ruta
+más larga que ya era el cuello de botella), así que el makespan reportado no cambia aunque la
+contención sí ocurrió y quedó correctamente reflejada en `mean_truck_wait_min` y en las nuevas
+`mean_plant_dump_utilization`/`mean_pad_dump_utilization`. En I08 específicamente, para las 4
+combinaciones de CV, el camión retrasado por contención sí resultó ser (al menos en una fracción
+de las 500 réplicas) el que determina el makespan, de ahí el cambio, aunque pequeño en magnitud
+absoluta (<0.4 min sobre un `cmax` de ~1087 min, <0.04%). **No se corrigió nada adicional ni se
+forzó ningún resultado esperado: se reporta el número tal como salió de la corrida real.**
+
+**Conclusión para el paper:** la corrección de modelado (Fase 8) es necesaria y correcta —
+elimina una fuente de sesgo estructural entre SimTSI-MC y SimTSI-DES que existía
+independientemente de si su efecto numérico observado en estas instancias surrogate concretas es
+grande o pequeño — pero su impacto medido en la matriz actual de instancias es marginal (máximo
+0.036% en `cmax`), consistente con la baja utilización/congestión ya documentada de estas
+instancias sintéticas. El sesgo podría ser considerablemente mayor en instancias con más
+congestión real (más loaders alimentando el mismo destino en ventanas más cortas), algo que las
+instancias reales de la mina sí podrían presentar y que este ajuste ahora modela correctamente
+desde el principio.
