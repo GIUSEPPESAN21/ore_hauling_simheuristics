@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auditoría SimTSI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#EEF1F2;
+  --surface:#FFFFFF;
+  --surface-sunk:#E4E9EB;
+  --ink:#151B1E;
+  --ink-2:#3C4A50;
+  --muted:#5B686E;
+  --hairline:#CFD8DB;
+  --hairline-strong:#AEBBC0;
+  --accent:#1F5A73;
+  --accent-soft:#DCE8ED;
+  --crit:#A8372A;
+  --crit-soft:#F5E2DE;
+  --high:#8A5E0F;
+  --high-soft:#F5EAD5;
+  --med:#3F5A67;
+  --med-soft:#E1E9ED;
+  --ok:#2C7359;
+  --ok-soft:#DCEBE4;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1316;
+    --surface:#151C20;
+    --surface-sunk:#1B2429;
+    --ink:#E3EAEC;
+    --ink-2:#BCC9CE;
+    --muted:#8FA0A7;
+    --hairline:#26333A;
+    --hairline-strong:#3A4B53;
+    --accent:#79B6D2;
+    --accent-soft:#16303D;
+    --crit:#E8836F;
+    --crit-soft:#38201B;
+    --high:#D9A94E;
+    --high-soft:#332810;
+    --med:#9DB2BC;
+    --med-soft:#1E282D;
+    --ok:#5FBE97;
+    --ok-soft:#122C22;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1316;
+  --surface:#151C20;
+  --surface-sunk:#1B2429;
+  --ink:#E3EAEC;
+  --ink-2:#BCC9CE;
+  --muted:#8FA0A7;
+  --hairline:#26333A;
+  --hairline-strong:#3A4B53;
+  --accent:#79B6D2;
+  --accent-soft:#16303D;
+  --crit:#E8836F;
+  --crit-soft:#38201B;
+  --high:#D9A94E;
+  --high-soft:#332810;
+  --med:#9DB2BC;
+  --med-soft:#1E282D;
+  --ok:#5FBE97;
+  --ok-soft:#122C22;
+}
+
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"Source Serif 4",Georgia,"Times New Roman",serif;
+  font-size:17px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{
+  max-width:1180px;
+  margin:0 auto;
+  padding:0 28px 120px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:0;
+}
+@media (min-width:1080px){
+  .wrap{grid-template-columns:212px minmax(0,1fr);column-gap:56px;}
+  .masthead,.lane-full{grid-column:1 / -1;}
+}
+
+/* ---------- masthead ---------- */
+.masthead{
+  border-bottom:2px solid var(--ink);
+  padding:52px 0 22px;
+  margin-bottom:34px;
+}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:11.5px;
+  font-weight:500;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:0 0 18px;
+}
+h1{
+  font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  font-weight:700;
+  font-size:clamp(38px,6.2vw,66px);
+  line-height:1.02;
+  letter-spacing:-.03em;
+  margin:0 0 18px;
+  text-wrap:balance;
+}
+.standfirst{
+  font-size:clamp(18px,2.1vw,21px);
+  line-height:1.5;
+  color:var(--ink-2);
+  max-width:62ch;
+  margin:0 0 30px;
+}
+.meta-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 30px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.02em;
+}
+.meta-row b{color:var(--ink-2);font-weight:500;}
+
+/* ---------- KPI strip ---------- */
+.kpis{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  border:1px solid var(--hairline);
+  border-left:none;
+  background:var(--surface);
+  margin:0 0 44px;
+}
+.kpi{
+  border-left:1px solid var(--hairline);
+  padding:18px 20px 16px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.kpi .n{
+  font-family:Archivo,Arial,sans-serif;
+  font-weight:700;
+  font-size:30px;
+  line-height:1;
+  letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+}
+.kpi .n.warn{color:var(--crit);}
+.kpi .n.good{color:var(--ok);}
+.kpi .l{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:10.5px;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--muted);
+  line-height:1.4;
+}
+
+/* ---------- nav rail ---------- */
+nav.toc{display:none;}
+@media (min-width:1080px){
+  nav.toc{
+    display:block;
+    grid-column:1;
+    position:sticky;
+    top:0;
+    align-self:start;
+    padding-top:6px;
+    max-height:100vh;
+    overflow-y:auto;
+  }
+  nav.toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;}
+  nav.toc a{
+    display:block;
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:11.5px;
+    line-height:1.35;
+    letter-spacing:.01em;
+    color:var(--muted);
+    text-decoration:none;
+    padding:6px 0 6px 11px;
+    border-left:2px solid var(--hairline);
+  }
+  nav.toc a:hover,nav.toc a:focus-visible{color:var(--accent);border-left-color:var(--accent);}
+  nav.toc .grp{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--hairline-strong);padding:16px 0 5px 11px;
+  }
+}
+main{grid-column:1;min-width:0;}
+@media (min-width:1080px){main{grid-column:2;}}
+
+/* ---------- typography ---------- */
+h2{
+  font-family:Archivo,Arial,sans-serif;
+  font-weight:700;
+  font-size:clamp(25px,3.3vw,33px);
+  line-height:1.1;
+  letter-spacing:-.02em;
+  margin:64px 0 6px;
+  padding-top:26px;
+  border-top:2px solid var(--ink);
+  text-wrap:balance;
+}
+h2:first-of-type{margin-top:0;}
+h2 .sec-n{
+  display:block;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11px;font-weight:500;letter-spacing:.15em;
+  color:var(--muted);margin-bottom:9px;text-transform:uppercase;
+}
+h3{
+  font-family:Archivo,Arial,sans-serif;
+  font-weight:600;
+  font-size:20px;
+  letter-spacing:-.012em;
+  line-height:1.25;
+  margin:40px 0 10px;
+  text-wrap:balance;
+}
+h4{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-weight:600;
+  font-size:11.5px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:24px 0 8px;
+}
+p{margin:0 0 15px;max-width:68ch;}
+main ul,main ol{max-width:66ch;margin:0 0 15px;padding-left:22px;}
+main li{margin-bottom:7px;}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px;}
+strong{font-weight:600;}
+code{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.855em;
+  background:var(--surface-sunk);
+  padding:1px 5px;
+  border-radius:2px;
+  word-break:break-word;
+}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+/* ---------- blocks ---------- */
+pre{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:12.5px;
+  line-height:1.62;
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-left:3px solid var(--hairline-strong);
+  padding:15px 18px;
+  overflow-x:auto;
+  margin:0 0 18px;
+  tab-size:2;
+}
+pre code{background:none;padding:0;font-size:inherit;}
+pre.evidence{border-left-color:var(--accent);background:var(--surface);}
+pre .cm{color:var(--muted);}
+pre .hl{color:var(--crit);font-weight:600;}
+pre .ok{color:var(--ok);font-weight:600;}
+
+.tw{overflow-x:auto;margin:0 0 20px;border:1px solid var(--hairline);background:var(--surface);}
+table{border-collapse:collapse;width:100%;font-size:13.5px;}
+th,td{
+  text-align:left;
+  padding:9px 13px;
+  border-bottom:1px solid var(--hairline);
+  vertical-align:top;
+}
+th{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  background:var(--surface-sunk);
+  white-space:nowrap;
+}
+td{font-family:"Source Serif 4",Georgia,serif;}
+td.mono,th.num,td.num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--surface-sunk);}
+
+/* ---------- findings ---------- */
+.finding{
+  border-top:1px solid var(--hairline-strong);
+  padding:26px 0 6px;
+  margin:0;
+}
+.finding:first-of-type{border-top-width:1px;}
+.fhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;margin-bottom:9px;}
+.fid{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:12px;font-weight:600;letter-spacing:.06em;
+  color:var(--muted);
+}
+.chip{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:10px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
+  padding:3px 8px;border:1px solid currentColor;white-space:nowrap;
+}
+.chip.crit{color:var(--crit);background:var(--crit-soft);}
+.chip.high{color:var(--high);background:var(--high-soft);}
+.chip.med{color:var(--med);background:var(--med-soft);}
+.chip.ok{color:var(--ok);background:var(--ok-soft);}
+.finding h3{margin:0 0 12px;font-size:21px;flex-basis:100%;}
+.ftag{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11px;color:var(--muted);
+}
+
+.callout{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-left:3px solid var(--crit);
+  padding:20px 22px 8px;
+  margin:0 0 26px;
+}
+.callout.pos{border-left-color:var(--ok);}
+.callout.note{border-left-color:var(--accent);}
+.callout h4{margin-top:0;}
+.callout p:last-child{margin-bottom:14px;}
+
+.verdict{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  padding:22px 24px 10px;
+  margin:0 0 30px;
+}
+.verdict h4{margin-top:0;color:var(--accent);}
+
+hr.rule{border:none;border-top:1px solid var(--hairline);margin:34px 0;}
+.footnote{font-size:14px;color:var(--muted);max-width:66ch;}
+footer{
+  margin-top:70px;padding-top:22px;border-top:2px solid var(--ink);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11.5px;color:var(--muted);line-height:1.7;
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Revisión técnica de código · Investigación de operaciones</p>
+  <h1>Auditoría SimTSI</h1>
+  <p class="standfirst">Revisión exhaustiva de los 18 archivos Python del proyecto <code>ore_hauling_simheuristics</code>: arquitectura, lógica de negocio, calidad y validez experimental de las tres simheurísticas de acarreo de mineral.</p>
+  <div class="meta-row">
+    <span><b>Repositorio:</b> ore_hauling_simheuristics</span>
+    <span><b>Commit:</b> a23d98c (Fase 8)</span>
+    <span><b>Fecha:</b> 19 de agosto de 2026</span>
+    <span><b>Alcance:</b> 18 archivos · 1.728 líneas</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Índice del informe">
+  <ol>
+    <li class="grp">Síntesis</li>
+    <li><a href="#resumen">1 · Resumen ejecutivo</a></li>
+    <li><a href="#arquitectura">2 · Arquitectura</a></li>
+    <li class="grp">Hallazgos</li>
+    <li><a href="#h1">H‑1 Métodos idénticos</a></li>
+    <li><a href="#h2">H‑2 Dinámico inerte</a></li>
+    <li><a href="#h3">H‑3 TSI sin efecto</a></li>
+    <li><a href="#h4">H‑4 Espera subreportada</a></li>
+    <li><a href="#h5">H‑5 Lote abortado</a></li>
+    <li><a href="#h6">H‑6 Anomalías en tabla</a></li>
+    <li><a href="#h7">H‑7 Config. rígida</a></li>
+    <li><a href="#h8">H‑8 Copia inútil</a></li>
+    <li><a href="#h9">H‑9 Coste del RNG</a></li>
+    <li><a href="#h10">H‑10 Menores</a></li>
+    <li class="grp">Detalle</li>
+    <li><a href="#modulos">3 · Archivo por archivo</a></li>
+    <li><a href="#tabla">4 · Tabla comparativa</a></li>
+    <li><a href="#patrones">5 · Patrones y fortalezas</a></li>
+    <li><a href="#recomendaciones">6 · Recomendaciones</a></li>
+    <li><a href="#conclusiones">7 · Conclusiones</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<div class="kpis">
+  <div class="kpi"><span class="n">18</span><span class="l">Archivos Python</span></div>
+  <div class="kpi"><span class="n">1.728</span><span class="l">Líneas de código</span></div>
+  <div class="kpi"><span class="n good">10/10</span><span class="l">Tests en verde</span></div>
+  <div class="kpi"><span class="n">28,1 h</span><span class="l">CPU del lote</span></div>
+  <div class="kpi"><span class="n warn">3 → 1</span><span class="l">Métodos con resultado distinto</span></div>
+  <div class="kpi"><span class="n warn">0,03 %</span><span class="l">Mejora del TSI sobre FIFO</span></div>
+</div>
+
+<div class="verdict">
+  <h4>Cómo leer este informe</h4>
+  <p>Todas las afirmaciones cuantitativas de este documento se obtuvieron <strong>ejecutando el código</strong> sobre el estado actual del repositorio, no leyéndolo ni tomándolas de documentos previos. Cada hallazgo incluye la evidencia reproducible que lo sustenta. La suite de tests se ejecutó completa (10 tests, 16,6 s, todos en verde) y el árbol de trabajo quedó limpio: <strong>no se modificó ningún archivo del proyecto</strong>.</p>
+</div>
+
+<h2 id="resumen"><span class="sec-n">Sección 1</span>Resumen ejecutivo</h2>
+
+<p>El proyecto implementa tres simheurísticas para programar el acarreo de mineral en una mina a cielo abierto durante un turno de 24 horas: <strong>SimTSI‑MC</strong> (búsqueda tabú + evaluación Monte Carlo analítica), <strong>SimTSI‑DES</strong> (búsqueda tabú + simulación de eventos discretos) y <strong>DynSimTSI‑DES</strong> (DES + reoptimización dinámica disparada por disrupciones).</p>
+
+<p>La calidad de ingeniería del código es <strong>notablemente alta</strong> para un proyecto de investigación: la separación de responsabilidades es limpia, el esquema de números aleatorios comunes está bien diseñado y es verificablemente invariante al orden de ejecución, las decisiones de diseño están documentadas con trazabilidad por fases, y existen tests de regresión que fijan el comportamiento numérico exacto de las dos correcciones de modelado más delicadas (Fase 2a y Fase 8). Los defectos de programación que encontré son reales pero acotados y de arreglo mecánico.</p>
+
+<div class="callout">
+  <h4>El hallazgo que condiciona todo lo demás</h4>
+  <p><strong>Los tres métodos producen resultados numéricamente idénticos.</strong> En las 40 combinaciones disponibles, SimTSI‑MC y SimTSI‑DES devuelven la misma solución, el mismo número de evaluaciones y el mismo <code>cmax</code> medio hasta 1e‑9. En las 38 combinaciones dinámicas, DynSimTSI‑DES devuelve exactamente el <code>cmax</code> estático y <strong>nunca ejecuta una sola reoptimización</strong>.</p>
+  <p>Y la búsqueda tabú, contribución central del trabajo, <strong>alcanza su mejor solución en la iteración 1 y mejora un 0,03 % sobre una regla FIFO trivial</strong>: las 999 iteraciones siguientes no cambian nada.</p>
+  <p>Nada de esto es un error de programación. Las 28,1 horas de CPU del lote experimental producen, en la práctica, <strong>una sola columna de resultados repetida tres veces</strong>, por lo que ni la comparación entre métodos ni el beneficio de la metaheurística tienen hoy respaldo empírico.</p>
+</div>
+
+<p>Las causas son independientes entre sí y requieren acciones distintas:</p>
+
+<ul>
+  <li><strong>SimTSI‑MC ≡ SimTSI‑DES es estructural.</strong> Tras la corrección de la Fase 8, el evaluador «Monte Carlo» dejó de ser una aproximación: es una reimplementación analítica <em>exacta</em> del mismo modelo que simula <code>des.py</code>. Lo verifiqué de forma adversarial en 24 pruebas con soluciones aleatorias muy congestionadas: la discrepancia máxima de <code>cmax</code> fue 0,000e+00. Esto vale en cualquier instancia, no solo en las actuales.</li>
+  <li><strong>DynSimTSI‑DES ≡ SimTSI‑DES depende de los datos.</strong> Las instancias sustitutas están tan poco cargadas (utilización media de cargadores del <strong>0,76 %</strong>) que los disparadores de reoptimización jamás se activan.</li>
+  <li><strong>La inercia del TSI también depende de los datos.</strong> En un sistema prácticamente vacío el orden de la secuencia apenas altera el makespan, así que FIFO ya es casi óptima y no queda estructura combinatoria que explotar.</li>
+</ul>
+
+<p>Ambas conclusiones apuntan al mismo punto de intervención: <strong>el diseño de las instancias</strong>. El <code>README.md</code> ya advierte que los datos son sustitutos y deben reemplazarse; esta auditoría cuantifica por qué esa advertencia es bloqueante y no cosmética.</p>
+
+<h2 id="arquitectura"><span class="sec-n">Sección 2</span>Arquitectura y flujo</h2>
+
+<p>La organización es un pipeline por capas, sin dependencias circulares y con una dirección de importación estrictamente descendente. Es una de las mayores fortalezas del proyecto.</p>
+
+<pre><code><span class="cm">CAPA 0 · Configuración y dominio</span>
+  config.py          semillas, TSIParams, SimBudget, DynamicParams, niveles de CV
+  models.py          Loader / Job / Instance, carga JSON, validate_solution()
+  random_streams.py  sorteo lognormal preservador de media con flujo CRN keyed
+
+<span class="cm">CAPA 1 · Motores de evaluación (intercambiables)</span>
+  mc.py              evaluate_mc()   — analítico en dos pasadas
+  des.py             evaluate_des()  — simulación de eventos discretos
+  parallel_pool.py   pool de procesos reutilizable para paralelismo por réplica
+
+<span class="cm">CAPA 2 · Metaheurística</span>
+  tsi.py             tabu_search(), vecindad INSERT, solución inicial FIFO
+                     — recibe el evaluador como *callback*: no sabe qué motor usa
+
+<span class="cm">CAPA 3 · Métodos (composición de capas 1 y 2)</span>
+  simtsi_mc.py       TSI + MC
+  simtsi_des.py      TSI + DES
+  dynsimtsi_des.py   DES + reoptimización dinámica con rollouts
+
+<span class="cm">CAPA 4 · Orquestación y entregables</span>
+  run_all.py                CLI, lote 10x4x3, timeouts, reanudación, summary.csv
+  generate_deliverables.py  manifiesto + resumen en Markdown para el artículo
+  instance_builder.py       generador de las 10 instancias sustitutas</code></pre>
+
+<p>El acierto de diseño central es la <strong>inyección del evaluador</strong> en <code>tabu_search</code>: la metaheurística está completamente desacoplada del modelo de simulación, lo que permite comparar MC y DES sobre exactamente la misma trayectoria de búsqueda. Es precisamente esa propiedad la que hace que el hallazgo H‑1 sea tan nítido de medir.</p>
+
+<pre><code><span class="cm"># tsi.py — el evaluador entra como callback; la búsqueda es agnóstica del motor</span>
+Evaluator = Callable[[Solution], float]
+
+def tabu_search(instance, evaluator: Evaluator, initial_solution=None,
+                params=TSIParams(), seed=TSI_SEED, validate_full=True) -> dict:</code></pre>
+
+<h2 id="hallazgos"><span class="sec-n">Sección 3</span>Hallazgos, por severidad</h2>
+
+<p>Diez hallazgos, ordenados de mayor a menor impacto sobre la validez del artículo y la estabilidad del código. Los tres primeros son de <em>validez experimental</em> y comparten causa raíz; los siete restantes son defectos de programación y de rendimiento.</p>
+
+<div class="finding" id="h1">
+  <div class="fhead">
+    <span class="fid">H‑1</span><span class="chip crit">Crítico</span>
+    <span class="ftag">validez experimental · mc.py, des.py</span>
+    <h3>SimTSI‑MC y SimTSI‑DES son el mismo modelo calculado de dos formas</h3>
+  </div>
+
+  <p>Tras la Fase 8, <code>mc.py</code> modela la contención en destinos con una cola de servidor único (<code>dest_free_at</code>) que replica exactamente el par <code>dest_busy</code>/<code>dest_queue</code> de <code>des.py</code>. Bajo la regla de producción <code>loader_release_rule='load_only'</code>, el cargador se libera al terminar de cargar y el ciclo posterior del camión <em>nunca realimenta</em> su disponibilidad. Sin esa realimentación, el modelo pierde toda dinámica que exija un bucle de eventos: las dos pasadas analíticas de <code>mc.py</code> son suficientes para reproducirlo con exactitud.</p>
+
+  <p>La consecuencia es que MC no es un evaluador «rápido y aproximado» frente a un DES «lento y fiel»: <strong>ambos calculan la misma función</strong>, y la única diferencia real es el coste (8,11 h de CPU acumuladas frente a 10,83 h).</p>
+
+  <h4>Evidencia reproducida</h4>
+  <pre class="evidence"><code><span class="cm">// 1. Sobre los resultados publicados: coincidencia total</span>
+combinaciones MC/DES con MISMA solucion final y mismo n de evaluaciones: <span class="hl">40/40</span>
+combinaciones que difieren: 0
+  mean_cmax_min identico en <span class="hl">40/40</span> combinaciones
+
+<span class="cm">// 2. Prueba adversarial: soluciones aleatorias muy congestionadas, CV alto</span>
+inst     cv      cmax MC     cmax DES      |dif|
+I03    0.30    836.86368    836.86368   0.00e+00
+I06    0.30    956.82069    956.82069   0.00e+00
+I08    0.30   1091.19240   1091.19240   0.00e+00
+I10    0.30   1120.57067   1120.57067   0.00e+00
+
+Maxima discrepancia de cmax en 24 pruebas congestionadas: <span class="hl">0.000e+00</span></code></pre>
+
+  <h4>Qué hacer</h4>
+  <p>Es una conclusión legítima y publicable —«el evaluador analítico reproduce el DES exactamente a un 25 % menos de coste»— pero <strong>hay que enunciarla como equivalencia, no como comparación de precisión</strong>. Si el artículo necesita contrastar dos modelos genuinamente distintos, hay que introducir un mecanismo que rompa la equivalencia: averías de equipo, cargadores con realimentación de ciclo completo, o rutas con interferencia en vía. Reportar hoy «MC frente a DES» como si midieran cosas distintas sería incorrecto.</p>
+</div>
+
+<div class="finding" id="h2">
+  <div class="fhead">
+    <span class="fid">H‑2</span><span class="chip crit">Crítico</span>
+    <span class="ftag">validez experimental · dynsimtsi_des.py, instance_builder.py</span>
+    <h3>El método dinámico nunca reoptimiza: su aporte es cero en las 38 combinaciones</h3>
+  </div>
+
+  <p><code>mean_n_reoptimizations</code> vale exactamente <code>0.0000</code> en <strong>todas</strong> las combinaciones dinámicas completadas, y <code>max_decision_time_s</code> vale 0 s. DynSimTSI‑DES está, en los hechos, ejecutando la solución estática a través del simulador y devolviendo su resultado sin tocarla.</p>
+
+  <p>La causa está en el diseño de las instancias, no en el disparador. <code>instance_builder.py</code> genera <code>2i</code> viajes para <code>i</code> cargadores, es decir <strong>2 viajes por cargador en un turno de 24 horas</strong>. En I10 eso son 85 minutos de trabajo de carga repartidos entre 10 cargadores sobre un horizonte de 1.440 minutos. El sistema está prácticamente vacío, así que ninguna cola llega a 2 camiones y ningún camión espera 30 minutos.</p>
+
+  <h4>Evidencia reproducida</h4>
+  <pre class="evidence"><code>combinaciones dinamicas: 38, con al menos una reoptimizacion: <span class="hl">0</span>
+media de mean_n_reoptimizations: <span class="hl">0.0000</span>
+max_decision_time_s global     : 0.00 s
+  cmax dinamico identico al estatico DES en <span class="hl">38/38</span> combinaciones
+
+<span class="cm">--- nivel de carga real de las instancias surrogate ---</span>
+  utilizacion media de cargadores : <span class="hl">0.76%</span>  (max 1.03%)
+  utilizacion media de planta     : <span class="hl">1.73%</span>  (max 2.71%)
+
+<span class="cm">--- umbrales del disparador vs realidad observada ---</span>
+  queue_threshold      = 2 camiones en cola de destino
+  delay_threshold_min  = 30 min de espera por cargador
+  espera media observada por camion: <span class="hl">0.0156 min</span> (max 0.0651 min)
+
+I10: 10 cargadores, 20 viajes, horizonte 1440 min
+     trabajo de carga total ~85 min repartido en 10 cargadores x 1440 min</code></pre>
+
+  <h4>Causa raíz: el modelo confunde «camión» con «viaje»</h4>
+  <p>El manuscrito describe instancias de 2 a 20 <em>camiones</em>. <code>instance_builder.py</code> lo interpreta como 2 a 20 <em>trabajos</em>, asignando un viaje único a cada camión: <code>'id': j, 'truck_id': j</code>. En una operación real cada camión completa decenas de ciclos por turno. Revelador: <code>models.Job</code> <strong>ya tiene</strong> el campo <code>truck_id</code> precisamente para permitir varios viajes por camión, pero ese campo no se lee en ninguna parte del código —lo confirmé por búsqueda exhaustiva—, porque el generador nunca crea más de un viaje por camión.</p>
+
+  <pre><code><span class="cm"># instance_builder.py — un viaje por camión, y truck_id queda inerte</span>
+n_trucks = 2*i
+for j in range(n_trucks):
+    jobs.append({
+        'id': j, <span class="hl">'truck_id': j,</span>   <span class="cm"># nunca se lee en ningún módulo</span>
+        ...
+    })</code></pre>
+
+  <h4>Qué hacer</h4>
+  <p>Generar varios viajes por camión hasta llenar el turno (ciclo nominal ≈ 30 min ⇒ del orden de 25 a 40 viajes por camión) elevaría la utilización a un rango operativo realista, activaría los disparadores dinámicos y daría contenido empírico al tercer método. Es el cambio de mayor impacto de todo el informe y no requiere tocar la lógica de simulación ni de optimización.</p>
+</div>
+
+<div class="finding" id="h3">
+  <div class="fhead">
+    <span class="fid">H‑3</span><span class="chip crit">Crítico</span>
+    <span class="ftag">validez experimental · tsi.py</span>
+    <h3>La búsqueda tabú alcanza su mejor solución en la iteración 1 y mejora un 0,03 % sobre FIFO</h3>
+  </div>
+
+  <p>Instrumenté <code>tabu_search</code> para recuperar la traza <code>history</code> que el código calcula pero descarta, y la ejecuté con los parámetros de producción sobre dos instancias. El resultado es inequívoco: <strong>la última mejora del mejor valor ocurre en la iteración 1</strong>, y las 999 iteraciones restantes no cambian nada. La ganancia total frente a la solución inicial FIFO es del <strong>0,017 % en I03 y del 0,032 % en I05</strong>.</p>
+
+  <h4>Evidencia reproducida</h4>
+  <pre class="evidence"><code>I03: 3 cargadores / 6 trabajos | 36.3s | 6781 evaluaciones unicas
+   fitness inicial=1051.8904 -&gt; final=1051.7094  (mejora <span class="hl">0.017%</span>)
+   ULTIMA mejora en iteracion <span class="hl">1</span> de 1000 =&gt; 99.9% de las iteraciones no aportan nada
+
+I05: 5 cargadores / 10 trabajos | 257.2s | 41146 evaluaciones unicas
+   fitness inicial=1079.9489 -&gt; final=1079.6001  (mejora <span class="hl">0.032%</span>)
+   ULTIMA mejora en iteracion <span class="hl">1</span> de 1000 =&gt; 99.9% de las iteraciones no aportan nada</code></pre>
+
+  <p>La causa es la misma que la de H‑2: en un sistema con menos del 1 % de utilización, los camiones casi nunca compiten por un recurso, de modo que el orden de la secuencia apenas afecta al makespan y la regla FIFO ya es prácticamente óptima. No hay estructura combinatoria que explotar.</p>
+
+  <p>La consecuencia es severa para el argumento del artículo: <strong>la metaheurística —la contribución central del trabajo— no muestra beneficio medible sobre una regla de despacho trivial</strong>. Y explica el perfil de coste completo del proyecto: el 99,9 % de las 28,1 horas de CPU se gastó en iteraciones que no cambiaron ningún resultado.</p>
+
+  <h4>Qué hacer</h4>
+  <p>Es un corolario de H‑2 y se resuelve por la misma vía: con instancias de carga realista, la secuenciación pasa a importar y el TSI tendrá margen que demostrar. Con las instancias corregidas conviene medir de nuevo esta traza antes de fijar <code>max_iters</code>: si la convergencia sigue siendo temprana, reducir el número de iteraciones recortaría el coste en un orden de magnitud sin perder calidad de solución, y eliminaría de paso los dos <em>timeouts</em> del lote. Propagar <code>history</code> al JSON de resultados (H‑10) es el requisito previo para poder sostener esa calibración ante un revisor.</p>
+</div>
+
+<div class="finding" id="h4">
+  <div class="fhead">
+    <span class="fid">H‑4</span><span class="chip high">Alto</span>
+    <span class="ftag">corrección · mc.py:87</span>
+    <h3><code>mean_truck_wait_min</code> en MC ignora la espera por cargador</h3>
+  </div>
+
+  <p>En <code>des.py</code> el indicador acumula <strong>dos</strong> componentes de espera: la del camión aguardando cargador y la del camión encolado en el destino. En <code>mc.py</code>, la rama <code>'queued'</code> <em>asigna</em> en lugar de acumular, y solo registra la espera en destino: la espera por cargador (<code>start - release_min</code>) se calcula implícitamente pero nunca se contabiliza.</p>
+
+  <pre><code><span class="cm"># des.py:73 — acumula la espera por cargador…</span>
+self.truck_wait[jid] += max(0.0, self.time - self.wait_since[jid])
+<span class="cm"># des.py:126 — …y también la espera en la cola del destino</span>
+self.truck_wait[nxt] += max(0.0, self.time - self.wait_since[nxt])
+
+<span class="cm"># mc.py:87 — asigna solo la espera en destino; la del cargador se pierde</span>
+start = max(j.release_min, free)      <span class="cm"># <- la espera por cargador vive aquí…</span>
+<span class="hl">truck_wait[jid] = dump_start - arrive</span>  <span class="cm"># …y nunca entra en el indicador</span></code></pre>
+
+  <h4>Evidencia reproducida</h4>
+  <p>Caso determinista mínimo (CV = 0): 1 cargador, 3 viajes liberados en t = 0, sin ninguna contención en destino. El cargador ocupa [0,10], [10,20], [20,30], de modo que el viaje 1 espera 10 min y el viaje 2 espera 20 min.</p>
+  <pre class="evidence"><code>  esperado (0+10+20)/3     = 10.0000
+  DES mean_truck_wait_min  = <span class="ok">10.0000</span>
+  MC  mean_truck_wait_min  = <span class="hl">0.0000</span>
+  cmax  DES=51.0000  MC=51.0000   <span class="cm">(el makespan sí coincide)</span></code></pre>
+  <p>Bajo congestión real la brecha se vuelve enorme: en las pruebas adversariales MC informó entre 0,00 y 0,29 min mientras DES informaba entre <strong>132 y 404 min</strong> para la misma solución.</p>
+
+  <div class="callout pos" style="margin-top:20px;">
+    <h4>Impacto sobre lo ya publicado: ninguno</h4>
+    <p>Verifiqué el efecto sobre los 120 resultados del lote: MC y DES coinciden en <code>mean_truck_wait_min</code> (media 0,0156 min, máximo 0,0651 min en ambos). En las soluciones optimizadas de estas instancias vacías ningún camión espera cargador, así que el término omitido vale cero y el defecto queda enmascarado. <strong>Las cifras ya reportadas no están contaminadas</strong>, pero el indicador dejará de ser fiable en cuanto se corrija H‑2 y las instancias tengan carga real.</p>
+  </div>
+</div>
+
+<div class="finding" id="h5">
+  <div class="fhead">
+    <span class="fid">H‑5</span><span class="chip high">Alto</span>
+    <span class="ftag">robustez · run_all.py:206</span>
+    <h3>La guarda contra fallos silenciosos aborta el lote completo</h3>
+  </div>
+
+  <p><code>_run_one_subprocess</code> concatena <code>proc.stderr</code> —el objeto de archivo, ya cerrado por <code>communicate()</code>— en lugar de la variable local <code>stderr</code> que contiene el texto capturado. La expresión lanza <code>TypeError</code>.</p>
+
+  <pre><code><span class="cm"># run_all.py:193 — la captura real queda en la variable local `stderr`</span>
+stdout, stderr = proc.communicate(timeout=timeout_s)
+...
+<span class="cm"># run_all.py:206 — pero aquí se usa el objeto de archivo</span>
+return False, None, 'Child process exited 0 but wrote no result file.\n' + <span class="hl">proc.stderr</span></code></pre>
+
+  <p>El agravante es dónde ocurre. En <code>run_batch</code>, la rama con timeout —la que se usa en producción— <strong>no está protegida por <code>try/except</code></strong>, a diferencia de la rama en proceso:</p>
+
+  <pre><code><span class="cm"># run_all.py:126-135</span>
+if timeout_s:
+    ok, row, err = _run_one_subprocess(...)     <span class="hl"># sin try/except</span>
+else:
+    try:
+        row = run_one(...)
+        ok, err = True, None
+    except Exception:                            <span class="ok"># sí protegida</span>
+        ok, row, err = False, None, traceback.format_exc()</code></pre>
+
+  <h4>Evidencia reproducida</h4>
+  <pre class="evidence"><code>returncode      = 0
+stderr local    = ''  <span class="cm">&lt;- la captura REAL</span>
+proc.stderr     = &lt;_io.TextIOWrapper name=4 encoding='cp1252'&gt;  <span class="cm">&lt;- lo que usa la linea 206</span>
+<span class="hl">&gt;&gt;&gt; TypeError: can only concatenate str (not "_io.TextIOWrapper") to str</span></code></pre>
+
+  <p>La ruta se activa cuando un hijo termina con código 0 pero no escribe su archivo de resultado —exactamente el fallo silencioso que la guarda existe para reportar—. En lugar de registrar la combinación como fallida y continuar, la excepción propaga y <strong>termina un lote de varias horas</strong>. El arreglo es de una palabra: usar <code>stderr</code> en vez de <code>proc.stderr</code>; conviene además envolver la rama con timeout en el mismo <code>try/except</code> que la otra.</p>
+</div>
+
+<div class="finding" id="h6">
+  <div class="fhead">
+    <span class="fid">H‑6</span><span class="chip high">Alto</span>
+    <span class="ftag">integridad de entregables · generate_deliverables.py:216-246</span>
+    <h3>Un resultado que falla la validación entra igualmente en la tabla del artículo</h3>
+  </div>
+
+  <p>El módulo declara en su docstring que valida cada resultado «antes de incluirlo». El manifiesto JSON sí respeta esa regla, pero la tabla de <code>RESUMEN_PARA_PAPER.md</code> se construye desde un diccionario paralelo, <code>ok_by_tag</code>, que se llena <strong>únicamente comprobando que el archivo exista</strong>, sin volver a mirar el resultado de <code>validate()</code>.</p>
+
+  <pre><code><span class="cm"># generate_deliverables.py:216-223 — se relee todo el disco, ahora sin validar</span>
+ok_by_tag = {}
+for iid in INSTANCES:
+    for cv in CV_LEVELS:
+        for method in METHODS:
+            p = RAW / f'{tag}.json'
+            <span class="hl">if p.exists():</span>                <span class="cm"># <- no comprueba validate()</span>
+                ok_by_tag[tag] = json.loads(p.read_text(encoding='utf-8'))</code></pre>
+
+  <h4>Evidencia reproducida</h4>
+  <p>Copié <code>resultados_paper/</code> a un directorio aislado, alteré <code>mc_I03_cv10.json</code> a <code>replications=17</code> (falla la validación de 500 réplicas) y regeneré los entregables. El resultado inválido aparece en la tabla principal <em>y</em> en la tabla de no completadas, y los conteos se contradicen:</p>
+
+  <pre class="evidence"><code>OK=117 TIMEOUT=2 FAILED=0 NO_INTENTADA=0 <span class="hl">ANOMALIAS=1</span> / 120
+
+<span class="cm">--- fila presente en la tabla de resultados del paper ---</span>
+| I03 | 3/6 | 0.1 | MC | 836.8 | 1.4 | 1.00 | 1.00 | 0.00 | - |
+
+<span class="cm">--- la MISMA combinacion, tambien en "no completadas" ---</span>
+| mc_I03_cv10 | I03 | 0.1 | SimTSI-MC | anomalia | replications (17) != 500 |
+
+filas de datos en la tabla: <span class="hl">118</span>
+texto declarado: "<span class="hl">117</span> de 120 combinaciones completas están en la tabla de arriba"
+
+<span class="cm">--- nota de estado, internamente contradictoria ---</span>
+"...0 con error; <span class="hl">0 nunca intentadas</span>. El lote <span class="hl">AÚN tiene combinaciones sin intentar</span>"
+
+totals: {'expected': 120, 'ok': 117, 'timeout': 2, 'failed': 0, 'no_intentada': 0}   <span class="cm"># suma 119</span></code></pre>
+
+  <p>Cuatro inconsistencias de un solo golpe: el dato inválido se publica, el recuento declarado no coincide con las filas reales (la variable <code>n_rows</code> se calcula pero nunca se usa; se imprime <code>counts['ok']</code>), la misma combinación aparece en dos tablas mutuamente excluyentes, y <code>counts</code> no tiene contador de anomalías, por lo que los totales no suman.</p>
+
+  <p><strong>Con los datos reales actuales no hay ninguna anomalía</strong>, de modo que los entregables entregados hoy son consistentes. El defecto es latente y se activa precisamente cuando la validación detecta algo, es decir, cuando más importa.</p>
+</div>
+
+<div class="finding" id="h7">
+  <div class="fhead">
+    <span class="fid">H‑7</span><span class="chip med">Medio</span>
+    <span class="ftag">reproducibilidad · generate_deliverables.py:143-169</span>
+    <h3>El manifiesto describe la configuración desde constantes escritas a mano</h3>
+  </div>
+
+  <p>El docstring promete que el módulo «lee los archivos reales en disco cada vez que se ejecuta y no confía en ninguna instantánea previa». El bloque <code>configuration</code> del manifiesto, sin embargo, es una instantánea literal: <code>short_reps: 5</code>, <code>timeout_s_default: 4500</code>, <code>workers: 2</code>, los parámetros TSI y las semillas están codificados en el fuente, no derivados de <code>run_log.jsonl</code> ni de <code>config.py</code>.</p>
+
+  <pre><code><span class="cm"># generate_deliverables.py:143 — constantes, no evidencia</span>
+'configuration': {
+    'short_reps': 5,          <span class="cm"># no se lee de run_log.jsonl</span>
+    'final_reps': 500,
+    'timeout_s_default': 4500,
+    'workers': 2,
+    'tsi_params': {'tenure': 10, 'max_iters': 1000, ...},
+    'seeds': {'tsi_seed': 12345, ...},
+},</code></pre>
+
+  <p>Hoy los valores coinciden con lo ejecutado, pero cualquier corrida futura con parámetros distintos producirá un manifiesto que <em>afirma</em> una configuración que no es la usada, sin que nada lo detecte. Para un artefacto cuyo propósito es respaldar la reproducibilidad de un artículo, conviene derivar esos campos del <code>run_log.jsonl</code> y de <code>config.py</code>, o marcarlos explícitamente como declarados por el operador. El bloque <code>known_limitation_pending_decision</code>, con su prosa fija sobre la Fase 8, tiene el mismo carácter.</p>
+</div>
+
+<div class="finding" id="h8">
+  <div class="fhead">
+    <span class="fid">H‑8</span><span class="chip med">Medio</span>
+    <span class="ftag">rendimiento · des.py:39</span>
+    <h3><code>clone()</code> copia en profundidad la instancia inmutable en cada rollout</h3>
+  </div>
+
+  <p><code>DESimulator.clone()</code> es <code>copy.deepcopy(self)</code>, lo que arrastra también <code>self.instance</code> —con todos sus <code>Job</code> y <code>Loader</code>—, un objeto que nunca se muta durante la simulación. Está en el bucle más interno de DynSimTSI‑DES: se invoca por cada réplica de rollout, por cada candidato de la vecindad, en cada iteración del TSI residual.</p>
+
+  <pre><code><span class="cm"># des.py:39</span>
+def clone(self):
+    return copy.deepcopy(self)     <span class="cm"># incluye self.instance, que jamás se modifica</span>
+
+<span class="cm"># dynsimtsi_des.py:33 — el bucle interno del método dinámico</span>
+for rr in range(dyn.rollout_reps):
+    clone = sim.clone()</code></pre>
+
+  <h4>Medición sobre I10</h4>
+  <pre class="evidence"><code>  200 x sim.clone()          =    95.3 ms  (0.476 ms c/u)
+  200 x deepcopy(instance)   =    52.6 ms  <span class="cm">&lt;- porcion pura de la Instance inmutable</span>
+  =&gt; <span class="hl">55%</span> del costo de clone() es copiar la Instance, que nunca se muta</code></pre>
+
+  <p>Excluir <code>instance</code> de la copia —vía <code>__deepcopy__</code> personalizado o reconstruyendo el estado mutable explícitamente— duplica aproximadamente la velocidad del rollout. Es directamente relevante para los dos <em>timeouts</em> del lote (<code>dynamic_I09_cv20</code> y <code>dynamic_I09_cv30</code>) y se vuelve crítico al corregir H‑2, que multiplicará el número de viajes por instancia.</p>
+</div>
+
+<div class="finding" id="h9">
+  <div class="fhead">
+    <span class="fid">H‑9</span><span class="chip med">Medio</span>
+    <span class="ftag">rendimiento · random_streams.py:28</span>
+    <h3>Se construye un generador aleatorio completo por cada sorteo individual</h3>
+  </div>
+
+  <p>Cada llamada a <code>lognormal_mean_cv</code> crea una <code>SeedSequence</code> y un <code>Generator</code> nuevos para producir <strong>un solo número</strong>. El perfilado muestra que esta capa domina el bucle de eventos: <code>lognormal_mean_cv</code> acumula 0,268 s de los 0,341 s de <code>step()</code> en una corrida de 60 réplicas sobre I10, es decir cerca del <strong>79 %</strong> del tiempo de simulación.</p>
+
+  <pre><code><span class="cm"># random_streams.py:28 — un Generator nuevo por número sorteado</span>
+rng = np.random.default_rng(_seed_sequence(base_seed, replicate, job_id, component, loader_id))
+return float(rng.lognormal(mean=mu, sigma=sigma))</code></pre>
+
+  <pre class="evidence"><code>20000 sorteos
+  SeedSequence + default_rng (actual) :    549.1 ms  (  27.5 us/sorteo)
+  Philox contador-based (alternativa) :    319.9 ms  (  16.0 us/sorteo)
+  speedup potencial en la capa RNG    : <span class="hl">1.7x</span>
+
+  CRN actual invariante al orden de invocacion: <span class="ok">True</span></code></pre>
+
+  <div class="callout note" style="margin-top:20px;">
+    <h4>Este coste está comprado a propósito, y la compra es defendible</h4>
+    <p>El esquema garantiza números aleatorios comunes perfectamente reproducibles e independientes del orden de ejecución —lo verifiqué explícitamente— y es lo que permite paralelizar por réplicas sin alterar un solo dígito. Es una decisión de diseño correcta para investigación. La alternativa contador‑based (Philox con clave) conserva esa propiedad a la mitad del coste, pero <strong>cambia todos los números sorteados</strong>, así que solo tiene sentido adoptarla junto con una recorrida completa del lote, nunca de forma incremental.</p>
+  </div>
+</div>
+
+<div class="finding" id="h10">
+  <div class="fhead">
+    <span class="fid">H‑10</span><span class="chip med">Menor</span>
+    <span class="ftag">mantenibilidad · varios</span>
+    <h3>Código muerto, asimetrías de salida y evidencia descartada</h3>
+  </div>
+
+  <ul>
+    <li><strong>Campos de configuración inertes.</strong> <code>SimBudget.elite_reps</code> se asigna en <code>run_all.py:68</code> pero no se lee en ningún módulo; <code>CV_CONTROL</code> se define y nunca se usa. Sugieren una fase de evaluación de élite que se planificó y no se implementó.</li>
+    <li><strong>Campos de dominio sin consumidor.</strong> <code>Job.grade_pct</code> se genera, se guarda y se serializa, pero no entra en ninguna función objetivo. En un problema de acarreo de mineral, la ley del material es normalmente central para la mezcla en planta; hoy el modelo optimiza únicamente <code>cmax</code> más una penalización por déficit de tonelaje. Vale la pena decidir explícitamente si es una omisión o un alcance deliberado.</li>
+    <li><strong>Asimetría entre motores.</strong> <code>evaluate_des</code> devuelve <code>mean_loader_utilization</code>, que <code>evaluate_mc</code> no calcula; <code>evaluate_mc</code> devuelve <code>mean_plant_fine_tons</code> y <code>mean_pad_fine_tons</code>, que <code>evaluate_des</code> no. Como <code>write_summary</code> construye las columnas por unión de claves, <code>summary.csv</code> queda con celdas vacías según el método.</li>
+    <li><strong>Se descarta la evidencia de convergencia.</strong> <code>tabu_search</code> devuelve <code>history</code> con la traza de <code>f_best</code> por iteración, pero ni <code>simtsi_mc</code> ni <code>simtsi_des</code> la propagan al JSON de resultados. No queda registro que justifique <em>a posteriori</em> el valor <code>max_iters=1000</code>, que es el principal determinante del coste (hasta 275.370 evaluaciones únicas en una sola combinación). Es la pieza de evidencia más barata de conservar y la más útil para defender la calibración ante un revisor.</li>
+    <li><strong>Desviación estándar poblacional.</strong> Se reporta <code>pstdev</code> en lugar de <code>stdev</code> muestral. Con 500 réplicas la diferencia es del 0,1 % y no altera ninguna conclusión, pero la convención habitual en publicaciones es la muestral; además no se reporta error estándar ni intervalo de confianza para <code>mean_cmax_min</code>.</li>
+    <li><strong>Reconstrucción de diccionarios en ruta caliente.</strong> <code>instance.job_map()</code> y <code>loader_map()</code> reconstruyen el diccionario completo en cada llamada, y se invocan en cinco puntos del bucle de eventos de <code>des.py</code> (5.940 reconstrucciones en una corrida de 60 réplicas) y dentro de <code>nominal_processing_min</code> en <code>tsi.py</code>. El coste medido es modesto frente al del RNG, pero crece linealmente con el número de viajes: conviene cachearlos antes de corregir H‑2.</li>
+  </ul>
+</div>
+
+<h2 id="modulos"><span class="sec-n">Sección 4</span>Análisis archivo por archivo</h2>
+
+<h3><code>config.py</code> · 28 líneas</h3>
+<p><strong>Propósito.</strong> Punto único de verdad para semillas, parámetros de la búsqueda tabú, presupuesto de réplicas y parámetros dinámicos.</p>
+<p><strong>Estructura.</strong> Tres <code>dataclass</code> congeladas (<code>TSIParams</code>, <code>SimBudget</code>, <code>DynamicParams</code>) más constantes de módulo. La inmutabilidad es la decisión correcta: impide que un método mute la configuración de otro, y <code>dataclasses.replace</code> ofrece la vía explícita para las variantes (<code>--quick</code>, <code>--short-reps</code>).</p>
+<p><strong>Observaciones.</strong> Separar los parámetros dinámicos de los del TSI permite recalibrar la política de reoptimización sin tocar la calibración publicada de la búsqueda, tal como promete el <code>README</code>. Los umbrales de <code>DynamicParams</code> son, sin embargo, el punto exacto donde se manifiesta H‑2: <code>queue_threshold=2</code> y <code>delay_threshold_min=30</code> son razonables para una operación real y completamente inalcanzables en las instancias actuales. <code>elite_reps</code> y <code>CV_CONTROL</code> son código muerto (H‑10).</p>
+
+<h3><code>models.py</code> · 76 líneas</h3>
+<p><strong>Propósito.</strong> Modelo de dominio y contrato de validez de las soluciones.</p>
+<p><strong>Observaciones.</strong> <code>Loader</code> y <code>Job</code> congelados, <code>Instance</code> mutable solo por conveniencia de construcción. <code>validate_solution</code> es una guarda excelente y bien colocada: comprueba cardinalidad por cargador, cobertura total y ausencia de duplicados en una sola función, invocada al construir cada simulador.</p>
+<pre><code>def validate_solution(instance: Instance, solution: List[List[int]]) -> None:
+    if len(solution) != instance.n_loaders:
+        raise ValueError('Solution must contain one sequence per loader.')
+    flat = [j for seq in solution for j in seq]
+    expected = sorted(j.id for j in instance.jobs)
+    if sorted(flat) != expected or len(flat) != len(set(flat)):
+        raise ValueError('Solution must contain every job exactly once.')</code></pre>
+<p>Dos matices: <code>job_map()</code>/<code>loader_map()</code> son métodos, no propiedades cacheadas, y se llaman en rutas calientes (H‑10); <code>truck_id</code> y <code>grade_pct</code> no tienen consumidor.</p>
+
+<h3><code>random_streams.py</code> · 29 líneas</h3>
+<p><strong>Propósito.</strong> Sorteo lognormal preservador de media sobre flujos aleatorios indexados por clave.</p>
+<p><strong>Observaciones.</strong> Es la pieza técnicamente más fina del proyecto. La parametrización <code>(media, CV) → (μ, σ)</code> es correcta y está bien deducida, y la clave <code>(base_seed, replicate, job_id, componente, loader_id)</code> hace el flujo independiente del orden de ejecución —propiedad que verifiqué y que es la que legitima todo el paralelismo por procesos—.</p>
+<pre><code>sigma2 = math.log1p(cv * cv)          <span class="cm"># log1p: estable para CV pequeño</span>
+sigma  = math.sqrt(sigma2)
+mu     = math.log(mean) - 0.5 * sigma2 <span class="cm"># corrección que preserva la media</span></code></pre>
+<p>El uso de <code>math.log1p</code> en lugar de <code>log(1+x)</code> muestra cuidado numérico real. El único reparo es de coste (H‑9), y es un coste comprado deliberadamente.</p>
+
+<h3><code>des.py</code> · 203 líneas</h3>
+<p><strong>Propósito.</strong> Simulador de eventos discretos de un turno completo.</p>
+<p><strong>Estructura.</strong> Cola de prioridad por <code>heapq</code> con desempate por contador monótono —lo que garantiza determinismo total ante empates temporales—, máquina de estados por trabajo (<code>not_released → waiting_loader → loading → hauling → waiting_dump → dumping → returning → done</code>) y cuatro tipos de evento.</p>
+<pre><code>def _push(self, t, etype, data):
+    self.counter += 1
+    heapq.heappush(self.events, (float(t), <span class="ok">self.counter</span>, etype, data))
+    <span class="cm"># el contador rompe empates de forma determinista y evita comparar dicts</span></code></pre>
+<p><strong>Observaciones.</strong> El modelo de recursos es correcto: cargadores con disponibilidad propia y destinos como servidores únicos con cola FIFO. <code>set_future_solution</code> —la interfaz para la reprogramación dinámica— valida que la solución residual contenga exactamente los trabajos no iniciados, lo que evita toda una clase de errores en el método dinámico. Puntos de mejora: <code>clone()</code> (H‑8) y las reconstrucciones de <code>job_map()</code> (H‑10).</p>
+
+<h3><code>mc.py</code> · 158 líneas</h3>
+<p><strong>Propósito.</strong> Evaluación analítica en dos pasadas, alternativa al DES.</p>
+<p><strong>Estructura.</strong> Pasada 1 por cargador (secuencia propia, cálculo de <code>load_end</code> y <code>arrive_dest</code>); pasada 2 por destino (serialización de descargas mediante <code>dest_free_at</code>). La documentación interna es de calidad excepcional: explica no solo qué hace cada pasada sino <em>por qué la descomposición es válida</em>.</p>
+<p><strong>Observación destacable.</strong> El módulo <em>rechaza explícitamente</em> la combinación <code>dest_contention_rule='queued'</code> con <code>loader_release_rule='full_cycle'</code>, en lugar de producir en silencio un resultado inconsistente. Es exactamente la actitud correcta ante una limitación de modelado:</p>
+<pre><code>raise ValueError(
+    "dest_contention_rule='queued' is not supported together with "
+    "loader_release_rule='full_cycle' -- see docs/DECISIONES.md, Fase 8."
+)</code></pre>
+<p>Ese rechazo, además, es lo que delimita con precisión el alcance de H‑1: la equivalencia exacta con DES vale bajo <code>load_only</code>, y el único modo que la rompería está deliberadamente deshabilitado. Defecto propio del módulo: H‑4.</p>
+
+<h3><code>tsi.py</code> · 128 líneas</h3>
+<p><strong>Propósito.</strong> Búsqueda tabú con vecindad INSERT y solución inicial FIFO.</p>
+<p><strong>Estructura.</strong> <code>fifo_solution</code> construye una asignación glotona por tiempo de finalización más temprano; <code>insert_neighbors</code> genera la vecindad completa como generador —evitando materializar todos los vecinos—; <code>tabu_search</code> mantiene lista tabú de soluciones visitadas con criterio de aspiración y perturbación por estancamiento.</p>
+<p><strong>Aciertos.</strong> La caché de evaluaciones indexada por <code>solution_key</code> evita reevaluar soluciones ya vistas, lo que en este problema es determinante: el generador produce muchos duplicados. Y <code>_copy_solution</code> sustituye a <code>deepcopy</code> con una justificación medida y documentada.</p>
+<pre><code>def _copy_solution(solution: Solution) -> Solution:
+    """Shallow copy sufficient for a list-of-lists-of-int: avoids copy.deepcopy(),
+    which recursively walks object structure and dominates runtime in the innermost
+    loop of insert_neighbors() (see docs/DECISIONES.md, Fase 2c)."""
+    return [list(route) for route in solution]</code></pre>
+<p><strong>Observaciones.</strong> La lista tabú almacena soluciones completas en un <code>deque</code>, de modo que la comprobación de pertenencia es lineal en el <em>tenure</em>; con tenure = 10 es irrelevante. Más sustantivo: la búsqueda agota siempre las 1.000 iteraciones sin criterio de parada por convergencia, y <code>history</code> —la única evidencia que permitiría calibrar ese número— se descarta (H‑10). Al recuperar esa traza se comprueba que la mejor solución aparece en la iteración 1 y que la mejora total sobre FIFO es del 0,02 % al 0,03 % (H‑3). La vecindad INSERT completa tiene tamaño <em>O(n·(n+m))</em>, lo que explica las hasta 275.370 evaluaciones únicas por combinación y, combinado con lo anterior, sitúa el 99,9 % del coste de búsqueda en iteraciones estériles.</p>
+
+<h3><code>dynsimtsi_des.py</code> · 146 líneas</h3>
+<p><strong>Propósito.</strong> Reoptimización en horizonte rodante disparada por disrupciones, con rollouts DES cortos.</p>
+<p><strong>Estructura.</strong> Bucle de eventos con evaluación de disparadores tras cada paso; al dispararse, ejecuta un TSI sobre la solución residual usando como función objetivo el promedio de <code>rollout_reps</code> rollouts.</p>
+<pre><code>def _triggered(sim, dyn, last_reopt) -> bool:
+    if sim.time - last_reopt &lt; dyn.min_reopt_interval_min:
+        return False
+    qmax = max(len(sim.dest_queue['Plant']), len(sim.dest_queue['Pad']))
+    waitmax = max(sim.time - sim.wait_since[jid]
+                  for jid, st in sim.status.items() if st == 'waiting_loader')
+    return qmax &gt;= dyn.queue_threshold or waitmax &gt;= dyn.delay_threshold_min</code></pre>
+<p><strong>Observaciones.</strong> El diseño es sólido —intervalo mínimo entre reoptimizaciones, tope de reoptimizaciones, semilla de rollout separada de la semilla de simulación para no contaminar la evaluación con los mismos números del escenario— y registra tiempos de decisión, que es la métrica que un revisor pedirá para juzgar aplicabilidad en tiempo real. Nada de eso se ejercita hoy (H‑2). Dos notas de coste: el TSI residual usa los <code>TSIParams</code> completos (<code>max_iters=1000</code>) en cada reoptimización, y <code>_triggered</code> recorre todos los trabajos tras cada evento.</p>
+
+<h3><code>simtsi_mc.py</code> / <code>simtsi_des.py</code> · 30 y 27 líneas</h3>
+<p><strong>Propósito.</strong> Composición de metaheurística y motor: búsqueda con presupuesto corto, evaluación final con presupuesto largo.</p>
+<p><strong>Observaciones.</strong> Son casi idénticos por construcción, y esa simetría es deliberada y correcta: aísla la elección del motor en una sola línea. El patrón —buscar con <code>short_reps</code> y reportar con <code>final_reps</code>— es la práctica estándar en simheurística y está bien implementado. Registran semillas y <code>cpu_s</code> en el resultado, lo que hace cada JSON autodescriptivo. La duplicación entre ambos archivos es tan pequeña que factorizarla probablemente perjudicaría la legibilidad.</p>
+
+<h3><code>parallel_pool.py</code> · 43 líneas</h3>
+<p><strong>Propósito.</strong> Ciclo de vida de un <code>multiprocessing.Pool</code> reutilizable.</p>
+<p><strong>Observaciones.</strong> Pool perezoso y reutilizado en lugar de uno por llamada —decisión acertada bajo el método <code>spawn</code> de Windows, donde crear un pool es caro—, con <code>workers&lt;=1</code> como ruta secuencial de coste cero. El docstring justifica la seguridad del paralelismo remitiendo a la propiedad de <code>random_streams.py</code>, que es el argumento correcto.</p>
+<p>Una advertencia latente: los procesos de un <code>Pool</code> son <em>daemónicos</em> y no pueden crear hijos. Hoy ninguna ruta anida pools —lo verifiqué—, pero si alguna vez se llamara a <code>evaluate_des(..., workers&gt;1)</code> dentro de una tarea del pool, fallaría en tiempo de ejecución. Conviene una guarda explícita. Nota de rendimiento: en <code>evaluate_des</code> la instancia se serializa en cada llamada, y como esa función se invoca una vez por candidato de la vecindad, con <code>short_reps=5</code> el coste de serialización puede superar al del trabajo paralelizado.</p>
+
+<h3><code>run_all.py</code> · 273 líneas</h3>
+<p><strong>Propósito.</strong> CLI y orquestador del lote 10 × 4 × 3.</p>
+<p><strong>Observaciones.</strong> Es el módulo con más responsabilidades y también el que muestra más cicatrices de operación real, en el buen sentido: reanudación por existencia de archivo, bitácora <code>run_log.jsonl</code> con una línea por intento, aislamiento en subproceso con timeout, y fusión de <code>summary.csv</code> por clave en lugar de sobrescritura. Cada una de esas piezas responde a un fallo concreto documentado en <code>docs/DECISIONES.md</code>.</p>
+<p>El caso más ilustrativo es <code>_kill_process_tree</code>, cuyo comentario documenta un fallo de producción con precisión forense:</p>
+<pre><code><span class="cm"># Kill pid and all of its descendants. [...] on Windows this leaves live orphaned</span>
+<span class="cm"># pool workers behind, which can keep the killed child's stdout/stderr pipe</span>
+<span class="cm"># handles open and make subprocess communicate() hang forever even after the</span>
+<span class="cm"># child is dead (observed in production: a timed-out dynamic_I09_cv20 stalled</span>
+<span class="cm"># run_batch() for 50+ minutes past its 4500s timeout).</span></code></pre>
+<p>Defecto: H‑5. Estilísticamente, es el archivo más alejado de PEP 8 del proyecto (imports agrupados en una línea, <code>if</code> y <code>return</code> en la misma línea, ausencia de espacios alrededor de <code>=</code> en llamadas), lo que contrasta con la pulcritud de los módulos de simulación.</p>
+
+<h3><code>generate_deliverables.py</code> · 294 líneas</h3>
+<p><strong>Propósito.</strong> Regenerar el manifiesto y el resumen para el artículo desde los resultados en bruto.</p>
+<p><strong>Observaciones.</strong> La intención es exactamente la correcta y poco común: reconstruir los entregables desde el disco en cada ejecución, validar cada resultado, y <strong>no omitir en silencio</strong> las combinaciones ausentes sino listarlas con su estado y evidencia. La función <code>validate</code> comprueba coherencia entre nombre de archivo y contenido, número de réplicas, finitud y rangos de probabilidad.</p>
+<p>La ejecución no está a la altura de la intención en dos puntos: la tabla del artículo no aplica el filtro de validación (H‑6) y el bloque de configuración no se deriva de la evidencia (H‑7). También relee y reparsea todos los JSON dos veces, y el formateo <code>f"({log_entry.get('elapsed_s'):.1f} s medidos)"</code> lanzaría <code>TypeError</code> si una entrada de timeout careciera de <code>elapsed_s</code>.</p>
+
+<h3><code>instance_builder.py</code> · 81 líneas</h3>
+<p><strong>Propósito.</strong> Generar las 10 instancias sustitutas reproducibles.</p>
+<p><strong>Observaciones.</strong> Reproducible por semilla (<code>default_rng(1000+i)</code>), con marca de procedencia incrustada en cada JSON —<code>provenance_note</code>— y un docstring que advierte sin ambigüedad que los datos no son los originales. La honestidad metodológica es ejemplar. Es, sin embargo, el origen de H‑2: un viaje por camión y un turno de 24 horas producen un sistema vacío. También conviene revisar que las contribuciones de producción se calibren al 110 % de la meta (<code>plant_total = META_P*1.10</code>), lo que hace las metas alcanzables casi por construcción —consistente con que <code>prob_plant_target</code> valga 1,00 en la mayoría de combinaciones—.</p>
+
+<h3><code>tests/</code> · 4 archivos, 212 líneas</h3>
+<p><strong>Propósito.</strong> Humo sobre los tres métodos, más regresión numérica de las correcciones de las Fases 2a, 2b y 8.</p>
+<p><strong>Observaciones.</strong> Los tests de consistencia son el mejor activo de calidad del proyecto. En lugar de comprobar que «algo corre», fijan valores calculados a mano sobre instancias mínimas deterministas y verifican la equivalencia MC↔DES exactamente donde el modelado es delicado:</p>
+<pre><code><span class="cm"># test_dest_contention.py — el valor esperado está razonado, no capturado</span>
+<span class="cm"># Ambos camiones llegan a Plant en t=15. El camión 0 descarga [15,20] y termina</span>
+<span class="cm"># en 30. El camión 1 espera la cola: descarga [20,25] y termina en 35 -- 5 min</span>
+<span class="cm"># extra, exactamente la duración de descarga del camión 0.</span>
+self.assertAlmostEqual(mc_res['mean_cmax_min'], 35.0, places=9)
+self.assertAlmostEqual(mc_res['mean_cmax_min'], des_res['mean_cmax_min'], places=9)</code></pre>
+<p>Ejecución completa: <strong>10 tests, 16,6 s, todos en verde</strong>. Las brechas de cobertura son las esperables: nada ejercita la ruta de reoptimización dinámica (imposible hoy, por H‑2), ni el paralelismo con <code>workers&gt;1</code>, ni <code>generate_deliverables.py</code>, ni las rutas de error de <code>run_all.py</code> —justo donde vive H‑5—.</p>
+
+<h2 id="tabla"><span class="sec-n">Sección 5</span>Tabla comparativa</h2>
+
+<div class="tw">
+<table>
+<thead>
+<tr><th>Archivo</th><th class="num">Líneas</th><th>Rol</th><th>Calidad</th><th>Hallazgos</th></tr>
+</thead>
+<tbody>
+<tr><td class="mono">config.py</td><td class="num">28</td><td>Configuración</td><td>Alta</td><td>H‑10 · código muerto</td></tr>
+<tr><td class="mono">models.py</td><td class="num">76</td><td>Dominio</td><td>Alta</td><td>H‑10 · campos sin uso</td></tr>
+<tr><td class="mono">random_streams.py</td><td class="num">29</td><td>Aleatoriedad CRN</td><td>Muy alta</td><td>H‑9 · coste por sorteo</td></tr>
+<tr><td class="mono">des.py</td><td class="num">203</td><td>Motor DES</td><td>Alta</td><td>H‑8 · clone; H‑10 · job_map</td></tr>
+<tr><td class="mono">mc.py</td><td class="num">158</td><td>Motor analítico</td><td>Muy alta</td><td>H‑1 · equivalencia; H‑4 · espera</td></tr>
+<tr><td class="mono">tsi.py</td><td class="num">128</td><td>Metaheurística</td><td>Alta</td><td>H‑3 · sin efecto medible; H‑10 · history</td></tr>
+<tr><td class="mono">dynsimtsi_des.py</td><td class="num">146</td><td>Método dinámico</td><td>Alta</td><td>H‑2 · nunca se dispara</td></tr>
+<tr><td class="mono">simtsi_mc.py</td><td class="num">30</td><td>Composición</td><td>Alta</td><td>—</td></tr>
+<tr><td class="mono">simtsi_des.py</td><td class="num">27</td><td>Composición</td><td>Alta</td><td>—</td></tr>
+<tr><td class="mono">parallel_pool.py</td><td class="num">43</td><td>Paralelismo</td><td>Alta</td><td>H‑10 · anidamiento latente</td></tr>
+<tr><td class="mono">run_all.py</td><td class="num">273</td><td>Orquestación</td><td>Media</td><td>H‑5 · aborta el lote</td></tr>
+<tr><td class="mono">generate_deliverables.py</td><td class="num">294</td><td>Entregables</td><td>Media</td><td>H‑6 · anomalías; H‑7 · config</td></tr>
+<tr><td class="mono">instance_builder.py</td><td class="num">81</td><td>Datos</td><td>Media</td><td>H‑2 · causa raíz</td></tr>
+<tr><td class="mono">tests/ (4 archivos)</td><td class="num">212</td><td>Verificación</td><td>Muy alta</td><td>Brechas de cobertura</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="footnote">«Calidad» valora legibilidad, documentación interna, corrección y mantenibilidad del módulo en su propio alcance; no incorpora la severidad de los hallazgos de validez experimental, que son transversales.</p>
+
+<h2 id="patrones"><span class="sec-n">Sección 6</span>Patrones, fortalezas y debilidades</h2>
+
+<h3>Fortalezas</h3>
+<ul>
+  <li><strong>Inyección de dependencias en la metaheurística.</strong> <code>tabu_search</code> recibe el evaluador como <em>callback</em>, lo que desacopla por completo búsqueda y simulación y permite comparar motores sobre la misma trayectoria.</li>
+  <li><strong>Reproducibilidad tomada en serio.</strong> Semillas fijas y separadas por propósito (TSI, simulación, rollout), flujos aleatorios indexados por clave e invariantes al orden, y marca de procedencia incrustada en los datos.</li>
+  <li><strong>Documentación de decisiones con trazabilidad.</strong> Los comentarios no describen lo que el código ya dice, sino por qué se eligió así y qué alternativa se descartó, con referencias a fases concretas de <code>docs/DECISIONES.md</code>. Es la clase de comentario que sigue siendo útil dos años después.</li>
+  <li><strong>Fallo explícito antes que resultado silenciosamente incorrecto.</strong> <code>validate_solution</code>, la validación de la solución residual en <code>set_future_solution</code> y el rechazo de la combinación <code>full_cycle</code> + <code>queued</code> son tres manifestaciones del mismo criterio, que es el correcto en código científico.</li>
+  <li><strong>Compatibilidad hacia atrás para comparación.</strong> Las reglas <code>full_cycle</code> y <code>none</code> conservan el comportamiento anterior a cada corrección, permitiendo cuantificar el efecto del cambio en lugar de afirmarlo.</li>
+  <li><strong>Tests que fijan números razonados.</strong> Valores calculados a mano y explicados en el comentario, no capturados de una corrida.</li>
+</ul>
+
+<h3>Debilidades</h3>
+<ul>
+  <li><strong>La capa de entregables no está a la altura de la capa de simulación.</strong> El código que produce los números es riguroso; el que los publica tiene una ruta que difunde datos inválidos (H‑6) y otra que declara configuración no verificada (H‑7). Es justo la inversión de prioridades que un revisor externo penaliza.</li>
+  <li><strong>Rutas de error sin tests.</strong> H‑5 vive en una guarda contra fallos silenciosos que nunca se ejercitó; por eso un <code>TypeError</code> trivial sobrevivió hasta producción.</li>
+  <li><strong>Los datos no recibieron el mismo escrutinio que el código.</strong> Ocho fases de revisión sobre la lógica y ninguna verificación de que las instancias generadas ejerciten los mecanismos que el artículo estudia.</li>
+  <li><strong>Estilo desigual.</strong> Los módulos de simulación son pulcros; <code>run_all.py</code> e <code>instance_builder.py</code> se apartan de PEP 8 de forma visible.</li>
+</ul>
+
+<h2 id="recomendaciones"><span class="sec-n">Sección 7</span>Recomendaciones</h2>
+
+<h3>Antes de reportar cualquier resultado</h3>
+<ol>
+  <li><strong>Rediseñar la carga de las instancias</strong> (H‑2). Generar varios viajes por camión hasta llenar el turno, usando el campo <code>truck_id</code> que ya existe. Sin esto, ni el método dinámico ni la metaheurística tienen nada que demostrar, y los tres métodos seguirán devolviendo la misma columna. Verificar el éxito con tres criterios explícitos: utilización de cargadores en rango operativo, <code>mean_n_reoptimizations &gt; 0</code> y mejora del TSI sobre FIFO claramente por encima del 0,03 % actual (H‑2 y H‑3).</li>
+  <li><strong>Reencuadrar la comparación MC frente a DES</strong> (H‑1) como una equivalencia demostrada con ventaja de coste, o introducir un mecanismo que rompa la equivalencia si el artículo necesita contrastar dos modelos distintos.</li>
+  <li><strong>Corregir <code>proc.stderr</code> y proteger la rama con timeout</strong> (H‑5). Una línea, y evita perder un lote de horas.</li>
+  <li><strong>Aplicar el filtro de validación a la tabla del artículo</strong> (H‑6): construir <code>ok_by_tag</code> solo con las combinaciones cuyo <code>validate()</code> resultó vacío, informar el número real de filas y añadir el contador de anomalías a <code>counts</code>.</li>
+</ol>
+
+<h3>Antes de la siguiente corrida completa</h3>
+<ol start="5">
+  <li><strong>Corregir <code>mean_truck_wait_min</code> en MC</strong> (H‑4) para que acumule también la espera por cargador, y añadir un test de regresión con el caso determinista de 3 viajes que verifica MC = DES = 10,0 min.</li>
+  <li><strong>Excluir la instancia inmutable de <code>clone()</code></strong> (H‑8): aproximadamente el doble de velocidad en el bucle de rollouts, decisivo cuando las instancias tengan carga real.</li>
+  <li><strong>Cachear <code>job_map()</code> y <code>loader_map()</code></strong> (H‑10) antes de multiplicar el número de viajes.</li>
+  <li><strong>Derivar el bloque <code>configuration</code> del manifiesto</strong> de <code>run_log.jsonl</code> y <code>config.py</code> (H‑7).</li>
+  <li><strong>Propagar <code>history</code> al JSON de resultados y volver a medir la convergencia</strong> (H‑3, H‑10): es la evidencia que justifica <code>max_iters=1000</code> ante un revisor y, si la convergencia sigue siendo temprana con instancias cargadas, permite recortar el coste en un orden de magnitud y eliminar los dos <em>timeouts</em>.</li>
+</ol>
+
+<h3>Mejoras de mayor alcance</h3>
+<ul>
+  <li><strong>Evaluar Philox contador‑based</strong> (H‑9) junto con una recorrida completa: 1,7× en la capa que consume el 79 % del bucle de simulación.</li>
+  <li><strong>Revisar la estrategia de paralelismo.</strong> Con <code>short_reps=5</code>, serializar la instancia en cada candidato puede costar más que el trabajo repartido. Paralelizar la vecindad del TSI, y no las réplicas, sería probablemente más efectivo.</li>
+  <li><strong>Decidir explícitamente el papel de <code>grade_pct</code></strong>: si la mezcla por ley no forma parte del alcance, retirarlo del modelo; si sí, incorporarlo a la función objetivo.</li>
+  <li><strong>Reportar error estándar o intervalo de confianza</strong> junto a <code>mean_cmax_min</code>, y usar desviación muestral.</li>
+  <li><strong>Añadir tests para las rutas de error de <code>run_all.py</code> y para <code>generate_deliverables.py</code></strong>, que es donde se concentran los defectos supervivientes.</li>
+</ul>
+
+<h2 id="conclusiones"><span class="sec-n">Sección 8</span>Conclusiones</h2>
+
+<p>El código está <strong>bien construido y merece confianza en su capa de simulación y optimización</strong>. La arquitectura por capas con inyección del evaluador es correcta y elegante; el tratamiento de la aleatoriedad es riguroso y habilita el paralelismo sin comprometer la reproducibilidad; los tests fijan el comportamiento numérico exactamente donde el modelado es delicado; y la documentación de decisiones tiene una trazabilidad superior a la habitual en software de investigación. Los ocho ciclos de revisión previos dejaron un producto sólido.</p>
+
+<p>El problema no está donde se ha venido mirando. Tras ocho fases dedicadas a la corrección de la lógica, <strong>el obstáculo que hoy bloquea el artículo está en los datos</strong>. Las instancias sustitutas generan un sistema con menos del 1 % de utilización, en el que ninguna de las dinámicas que el trabajo estudia —congestión, colas, disrupciones, reprogramación— llega a manifestarse. Sobre esos datos, el método dinámico nunca actúa, el evaluador analítico coincide dígito a dígito con el simulador de eventos, y la búsqueda tabú apenas mejora un 0,03 % sobre una regla FIFO trivial antes de gastar 999 iteraciones estériles: las 28,1 horas de CPU del lote producen una sola columna de resultados repetida tres veces.</p>
+
+<p>Conviene separar con claridad las dos naturalezas, porque exigen respuestas distintas. La equivalencia entre SimTSI‑MC y SimTSI‑DES es <strong>estructural</strong>: se sostiene en cualquier instancia bajo la regla de producción vigente, y es un resultado válido siempre que se enuncie como equivalencia demostrada —con la ventaja de coste que conlleva— y no como una comparación de fidelidad. La inercia de DynSimTSI‑DES y la del propio TSI, en cambio, son <strong>circunstanciales</strong>: desaparecen en cuanto las instancias tengan carga realista, sin tocar una sola línea de la lógica de reoptimización ni de búsqueda.</p>
+
+<p>De los siete defectos de programación, ninguno contamina las cifras ya publicadas —lo verifiqué combinación por combinación— y todos son de arreglo mecánico. Dos merecen atención inmediata por su asimetría entre coste y consecuencia: un <code>TypeError</code> de una palabra que aborta lotes de horas justo en la guarda que debía protegerlos, y una tabla de resultados que publicaría datos inválidos precisamente cuando la validación los detecta.</p>
+
+<p>La prioridad es una sola y está clara: <strong>rediseñar la carga de las instancias</strong>. Es el cambio que convierte un lote experimental sin poder discriminante en uno capaz de sostener las conclusiones del artículo, no requiere modificar la lógica de simulación ni de optimización, y el campo <code>truck_id</code> necesario para hacerlo ya está en el modelo de datos, esperando su primer consumidor.</p>
+
+<footer>
+  Auditoría SimTSI · ore_hauling_simheuristics · commit a23d98c<br>
+  Verificado por ejecución sobre el estado actual del repositorio · 19 de agosto de 2026<br>
+  Suite de tests: 10/10 en verde (16,6 s) · Árbol de trabajo sin modificaciones
+</footer>
+
+</main>
+</div>
+</body>
+</html>
